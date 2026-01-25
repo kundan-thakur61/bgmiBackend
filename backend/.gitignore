@@ -1,0 +1,96 @@
+# ===============================
+# Dependencies
+# ===============================
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===============================
+# Environment variables
+# ===============================
+.env
+.env.*
+.env.local
+.env.*.local
+.env.example
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===============================
+# Build outputs
+# ===============================
+dist/
+build/
+coverage/
+.nyc_output/
+
+# ===============================
+# IDE / Editor
+# ===============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ===============================
+# OS files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Cache / Temp
+# ===============================
+.cache/
+.tmp/
+temp/
+tmp/
+
+# ===============================
+# Uploads
+# ===============================
+uploads/
+public/uploads/
+
+# ===============================
+# Database
+# ===============================
+*.db
+*.sqlite
+*.sqlite3
+
+# ===============================
+# Cloud / Infra
+# ===============================
+.aws/
+.mongodb-memory-server/
+
+# ===============================
+# Test / Debug
+# ===============================
+*.test.js
+debug-*.js
+
+# ===============================
+# Archives
+# ===============================
+*.zip
+
+# ===============================
+# Misc
+# ===============================
+.pid
+*.pid.lock
+IMAGEFIX_SUMMARY.md
