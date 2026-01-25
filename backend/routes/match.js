@@ -11,6 +11,15 @@ router.get('/upcoming', matchController.getUpcomingMatches);
 router.get('/live', matchController.getLiveMatches);
 router.get('/:id', optionalAuth, matchController.getMatch);
 
+// User match creation route
+router.post('/user-create', auth, validationChains.createUserMatch, matchController.createUserMatch);
+
+// User cancel their own challenge match
+router.post('/:id/user-cancel', auth, matchController.cancelUserMatch);
+
+// User update their own challenge match
+router.put('/:id/user-update', auth, matchController.updateUserMatch);
+
 // Protected routes (requires auth)
 router.post('/:id/join', auth, matchController.joinMatch);
 router.post('/:id/leave', auth, matchController.leaveMatch);
@@ -25,6 +34,7 @@ router.delete('/:id', auth, adminOnly, matchController.deleteMatch);
 router.post('/:id/room-credentials', auth, matchManagerAccess, matchController.setRoomCredentials);
 router.post('/:id/start', auth, matchManagerAccess, matchController.startMatch);
 router.post('/:id/complete', auth, matchManagerAccess, matchController.completeMatch);
+router.post('/:id/declare-winners', auth, matchManagerAccess, matchController.declareWinners);
 router.post('/:id/cancel', auth, matchManagerAccess, matchController.cancelMatch);
 router.post('/:id/verify-result', auth, matchManagerAccess, matchController.verifyResult);
 router.get('/:id/screenshots', auth, matchManagerAccess, matchController.getAllScreenshots);

@@ -30,5 +30,13 @@ router.delete('/announcements/:id', auth, adminOnly, adminController.deleteAnnou
 router.get('/reports/revenue', auth, adminOnly, adminController.getRevenueReport);
 router.get('/reports/users', auth, adminOnly, adminController.getUserReport);
 router.get('/reports/matches', auth, adminOnly, adminController.getMatchReport);
+router.get('/reports/referrals', auth, adminOnly, adminController.getReferralStats);
+
+// Disputes
+router.get('/disputes/stats', auth, adminOnly, adminController.getDisputeStats);
+
+// Broadcast Notifications
+router.post('/broadcast', auth, adminOnly, adminController.broadcastNotification);
 
 module.exports = router;
+

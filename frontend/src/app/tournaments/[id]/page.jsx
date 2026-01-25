@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import Chat from '@/components/chat/Chat';
+import { TournamentSchema, BreadcrumbSchema } from '@/components/seo';
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -46,7 +48,7 @@ export default function TournamentDetailPage() {
     const credentials = {};
     for (const match of matches) {
       try {
-        const data = await api.request(`/matches/${match._id}/room`);
+        const data = await api.getRoomCredentials(match._id);
         if (data?.roomId) {
           credentials[match._id] = data;
         }
@@ -125,6 +127,16 @@ export default function TournamentDetailPage() {
 
   return (
     <>
+      {tournament && (
+        <>
+          <TournamentSchema tournament={tournament} />
+          <BreadcrumbSchema items={[
+            { name: 'Home', url: 'https://battlezone.com' },
+            { name: 'Tournaments', url: 'https://battlezone.com/tournaments' },
+            { name: tournament.title || tournament.name, url: `https://battlezone.com/tournaments/${params.id}` },
+          ]} />
+        </>
+      )}
       <Navbar />
       <main className="min-h-screen bg-dark-900 py-8">
         <div className="container mx-auto px-4 max-w-4xl">
@@ -211,8 +223,8 @@ export default function TournamentDetailPage() {
                     <span className="font-bold text-gaming-green">₹{prize.prize}</span>
                   </div>
                 )) || (
-                  <p className="text-dark-400">Prize details coming soon</p>
-                )}
+                    <p className="text-dark-400">Prize details coming soon</p>
+                  )}
               </div>
             </div>
           </div>
@@ -251,7 +263,7 @@ export default function TournamentDetailPage() {
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Room Credentials for this match */}
                     {isRegistered && matchCredentials[match._id] && (
                       <div className="mt-3 pt-3 border-t border-dark-600">
@@ -344,6 +356,18 @@ export default function TournamentDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Tournament Chat */}
+          {isRegistered && (
+            <div className="card p-0 mb-6 overflow-hidden h-[500px] flex flex-col">
+              <div className="p-4 border-b border-dark-700 bg-dark-800">
+                <h3 className="font-bold text-white flex items-center gap-2">💬 Tournament Chat</h3>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <Chat tournamentId={params.id} />
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

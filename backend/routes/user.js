@@ -37,4 +37,12 @@ router.put('/notification-preferences', auth, userController.updateNotificationP
 // Update push subscription
 router.post('/push-subscription', auth, userController.updatePushSubscription);
 
+// Additional routes for frontend API consistency
+router.get('/match-history', auth, userController.getMatchHistory);
+router.get('/referral-stats', auth, userController.getReferralInfo);
+router.post('/push-subscribe', auth, userController.updatePushSubscription);
+router.post('/push-unsubscribe', auth, userController.removePushSubscription);
+router.get('/search', auth, userController.searchUsers);
+
 module.exports = router;
+

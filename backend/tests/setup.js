@@ -1,9 +1,8 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 
 // Note: Razorpay and Cloudinary mocks are in tests/mocks.js which runs before this
-
-let mongoServer;
 
 // Setup before all tests
 beforeAll(async () => {
@@ -11,16 +10,12 @@ beforeAll(async () => {
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
   }
-  
-  // Create an in-memory MongoDB instance
-  mongoServer = await MongoMemoryServer.create({
-    binary: {
-      version: '6.0.12',
-      checkMD5: false
-    }
-  });
-  const mongoUri = mongoServer.getUri();
-  
+
+  // Read the mongo URI from the config file created by globalSetup
+  const configPath = path.join(__dirname, 'test-config.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const mongoUri = config.mongoUri;
+
   // Set environment variables for tests
   process.env.MONGODB_URI = mongoUri;
   process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing';
@@ -32,8 +27,8 @@ beforeAll(async () => {
   process.env.CLOUDINARY_CLOUD_NAME = 'test_cloud';
   process.env.CLOUDINARY_API_KEY = 'test_api_key';
   process.env.CLOUDINARY_API_SECRET = 'test_api_secret';
-  
-  // Connect to the in-memory database
+
+  // Connect to the shared in-memory database
   await mongoose.connect(mongoUri);
 }, 120000); // 2 minutes timeout for first run
 
@@ -51,9 +46,6 @@ afterEach(async () => {
 afterAll(async () => {
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
-  }
-  if (mongoServer) {
-    await mongoServer.stop();
   }
 });
 

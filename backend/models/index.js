@@ -10,5 +10,11 @@ module.exports = {
   Notification: require('./Notification'),
   Announcement: require('./Announcement'),
   ScreenshotHash: require('./ScreenshotHash'),
-  AdminLog: require('./AdminLog')
+  AdminLog: require('./AdminLog'),
+  ChatMessage: require('./ChatMessage'),
+  Conversation: require('./Conversation'),
+  Achievement: require('./Achievement'),
+  UserAchievement: require('./UserAchievement'),
+  Team: require('./Team'),
+  Dispute: require('./Dispute')
 };

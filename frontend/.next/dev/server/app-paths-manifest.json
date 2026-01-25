@@ -1,7 +1,0 @@
-{
-  "/matches/page": "app/matches/page.js",
-  "/page": "app/page.js",
-  "/profile/page": "app/profile/page.js",
-  "/tournaments/page": "app/tournaments/page.js",
-  "/wallet/page": "app/wallet/page.js"
-}

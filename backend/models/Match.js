@@ -79,6 +79,15 @@ const matchSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Challenge Match fields
+  isChallenge: {
+    type: Boolean,
+    default: false
+  },
+  creationFee: {
+    type: Number,
+    default: 0
+  },
   // Timing
   scheduledAt: {
     type: Date,
@@ -213,12 +222,12 @@ matchSchema.index({ scheduledAt: -1 });
 matchSchema.index({ isFeatured: 1, status: 1 });
 
 // Virtual for available slots
-matchSchema.virtual('availableSlots').get(function() {
+matchSchema.virtual('availableSlots').get(function () {
   return this.maxSlots - this.filledSlots;
 });
 
 // Check if match is joinable
-matchSchema.methods.isJoinable = function() {
+matchSchema.methods.isJoinable = function () {
   if (this.status !== 'upcoming' && this.status !== 'registration_open') {
     return { joinable: false, reason: 'Registration is closed' };
   }
@@ -232,7 +241,7 @@ matchSchema.methods.isJoinable = function() {
 };
 
 // Check if user has already joined
-matchSchema.methods.hasUserJoined = function(userId) {
+matchSchema.methods.hasUserJoined = function (userId) {
   return this.joinedUsers.some(ju => {
     // Handle both populated and non-populated user field
     const joinedUserId = ju.user._id ? ju.user._id : ju.user;
@@ -241,7 +250,7 @@ matchSchema.methods.hasUserJoined = function(userId) {
 };
 
 // Get user's slot info
-matchSchema.methods.getUserSlot = function(userId) {
+matchSchema.methods.getUserSlot = function (userId) {
   return this.joinedUsers.find(ju => {
     // Handle both populated and non-populated user field
     const joinedUserId = ju.user._id ? ju.user._id : ju.user;
@@ -250,11 +259,11 @@ matchSchema.methods.getUserSlot = function(userId) {
 };
 
 // Add user to match
-matchSchema.methods.addUser = function(userId, inGameName, inGameId) {
+matchSchema.methods.addUser = function (userId, inGameName, inGameId) {
   if (this.hasUserJoined(userId)) {
     throw new Error('User has already joined this match');
   }
-  
+
   const slotNumber = this.filledSlots + 1;
   this.joinedUsers.push({
     user: userId,
@@ -264,12 +273,12 @@ matchSchema.methods.addUser = function(userId, inGameName, inGameId) {
     entryPaid: true
   });
   this.filledSlots = slotNumber;
-  
+
   return slotNumber;
 };
 
 // Remove user from match
-matchSchema.methods.removeUser = function(userId) {
+matchSchema.methods.removeUser = function (userId) {
   const index = this.joinedUsers.findIndex(ju => ju.user.toString() === userId.toString());
   if (index === -1) {
     throw new Error('User not found in match');
@@ -279,17 +288,20 @@ matchSchema.methods.removeUser = function(userId) {
 };
 
 // Pre-save middleware
-matchSchema.pre('save', function(next) {
+matchSchema.pre('save', function (next) {
   // Set room reveal time (15 minutes before match)
   if (this.isModified('scheduledAt') && !this.roomIdRevealTime) {
     this.roomIdRevealTime = new Date(this.scheduledAt.getTime() - 15 * 60 * 1000);
   }
-  
-  // Set registration close time (30 minutes before match)
+
+  // Set registration close time
   if (this.isModified('scheduledAt') && !this.registrationCloseTime) {
-    this.registrationCloseTime = new Date(this.scheduledAt.getTime() - 30 * 60 * 1000);
+    // For challenge matches, allow joining until start time
+    // For organized tournaments/matches, close 30 minutes before
+    const bufferTime = this.isChallenge ? 0 : 30 * 60 * 1000;
+    this.registrationCloseTime = new Date(this.scheduledAt.getTime() - bufferTime);
   }
-  
+
   next();
 });
 

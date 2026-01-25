@@ -1,6 +1,6 @@
 const { User, Transaction, Notification } = require('../models');
 const { generateToken } = require('../middleware/auth');
-const { BadRequestError, NotFoundError } = require('../middleware/errorHandler');
+const { BadRequestError, NotFoundError, ForbiddenError } = require('../middleware/errorHandler');
 const { sendOTP } = require('../config/sms');
 
 // Send OTP
@@ -50,6 +50,13 @@ exports.verifyOtp = async (req, res, next) => {
       throw new NotFoundError('User not found');
     }
     
+    if (user.isBanned) {
+      throw new ForbiddenError(user.banReason || 'Your account has been banned');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenError('Your account is inactive');
+    }
+
     const verifyResult = user.verifyOTP(otp);
     
     if (!verifyResult.valid) {
@@ -79,17 +86,18 @@ exports.verifyOtp = async (req, res, next) => {
     
     await user.save();
     
-    const token = generateToken(user);
-    
-    // Check if user needs to complete registration
     const needsRegistration = !user.name;
+    const token = needsRegistration ? null : generateToken(user);
     
-    res.json({
+    const response = {
       success: true,
       message: 'OTP verified successfully',
-      token,
-      needsRegistration,
-      user: {
+      needsRegistration
+    };
+    
+    if (!needsRegistration) {
+      response.token = token;
+      response.user = {
         id: user._id,
         name: user.name,
         phone: user.phone,
@@ -99,8 +107,10 @@ exports.verifyOtp = async (req, res, next) => {
         isKycVerified: user.isKycVerified,
         role: user.role,
         avatar: user.avatar
-      }
-    });
+      };
+    }
+    
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -257,6 +267,13 @@ exports.googleCallback = async (req, res, next) => {
           isEmailVerified: true
         });
       }
+    }
+    
+    if (user.isBanned) {
+      throw new ForbiddenError(user.banReason || 'Your account has been banned');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenError('Your account is inactive');
     }
     
     user.lastLoginAt = new Date();

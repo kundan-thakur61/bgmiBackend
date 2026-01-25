@@ -1,11 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { register, sendOtp, verifyOtp, isAuthenticated } = useAuth();
@@ -342,5 +343,31 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-dark-900">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-gaming-purple rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">B</span>
+            </div>
+            <span className="text-2xl font-bold font-display gradient-text">BattleZone</span>
+          </div>
+          <div className="card p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+              <h1 className="text-2xl font-bold mb-2">Loading...</h1>
+              <p className="text-dark-400">Please wait while we prepare the registration form</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }

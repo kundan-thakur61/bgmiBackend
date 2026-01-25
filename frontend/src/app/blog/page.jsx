@@ -1,15 +1,20 @@
 import Link from 'next/link';
 import { Navbar, Footer } from '@/components/layout';
-import { createMetadata } from '@/lib/metadata';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata = createMetadata(
-  'Gaming Blog & Esports News',
-  'Stay updated with the latest PUBG Mobile, BGMI, and Free Fire news, tips, strategies, and tournament updates on BattleZone Blog.',
-  ['gaming blog', 'esports news', 'PUBG tips', 'Free Fire strategies', 'BGMI updates'],
-  'https://battlezone.com/blog'
-);
+export const metadata = pageMetadata.blog;
 
 const blogPosts = [
+  {
+    slug: 'bgmi-tournament-guide-2026',
+    title: 'BGMI Tournament Guide 2026 - Complete Guide to Winning Real Money',
+    excerpt: 'Master BGMI tournaments in 2026. Learn how to join tournaments, win real money, pro strategies, and step-by-step registration process.',
+    image: '/blog/bgmi-tournament-guide-2026.jpg',
+    category: 'Ultimate Guide',
+    date: '2026-01-15',
+    readTime: '15 min read',
+    featured: true,
+  },
   {
     slug: 'pubg-mobile-tips-for-beginners',
     title: '10 Essential PUBG Mobile Tips for Beginners',

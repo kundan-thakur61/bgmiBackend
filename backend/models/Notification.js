@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: [
+      'match',
       'match_reminder',
       'match_starting',
       'room_released',
@@ -100,6 +101,20 @@ notificationSchema.statics.createAndPush = async function(data) {
   // }
   
   return notification;
+};
+
+// Static: Create notification (simplified version)
+notificationSchema.statics.createNotification = async function(userId, type, title, message, data = {}) {
+  return this.create({
+    user: userId,
+    type,
+    title,
+    message,
+    reference: data.matchId ? { type: 'match', id: data.matchId } : undefined,
+    actionUrl: data.matchId ? `/matches/${data.matchId}` : data.actionUrl,
+    actionText: data.actionText || 'View',
+    priority: data.priority || 'normal'
+  });
 };
 
 // Static: Mark all as read for user

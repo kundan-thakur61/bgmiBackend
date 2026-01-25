@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, getMe, logout as apiLogout } from '@/lib/api';
 
 const AuthContext = createContext({});
 
@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        const data = await api.getMe();
+        const data = await getMe();
         setUser(data.user);
       }
     } catch (err) {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await api.logout();
+      await apiLogout();
     } catch (err) {
       // Ignore logout errors
     } finally {

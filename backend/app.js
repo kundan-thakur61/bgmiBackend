@@ -20,10 +20,18 @@ const adminRoutes = require('./routes/admin');
 const kycRoutes = require('./routes/kyc');
 const ticketRoutes = require('./routes/ticket');
 const notificationRoutes = require('./routes/notification');
+const chatRoutes = require('./routes/chat');
+const seoRoutes = require('./routes/seo');
+const leaderboardRoutes = require('./routes/leaderboard');
+const achievementRoutes = require('./routes/achievement');
+const teamRoutes = require('./routes/team');
+const disputeRoutes = require('./routes/dispute');
+const searchRoutes = require('./routes/search');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
 const { socketAuth } = require('./middleware/socketAuth');
+const { performanceMonitor } = require('./middleware/performance');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,7 +39,11 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      process.env.FRONTEND_URL,
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -42,7 +54,11 @@ app.set('io', io);
 
 // CORS - MUST be before rate limiting
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ].filter(Boolean),
   credentials: true
 }));
 
@@ -83,6 +99,9 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Performance monitoring
+app.use(performanceMonitor);
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlezone')
   .then(() => console.log('✅ MongoDB Connected'))
@@ -104,28 +123,47 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/seo', seoRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api/search', searchRoutes);
 
 // Socket.io connection handling
 io.use(socketAuth);
 
 io.on('connection', (socket) => {
   console.log(`🔌 User connected: ${socket.userId}`);
-  
+
   // Join user to their personal room
   socket.join(`user_${socket.userId}`);
-  
+
   // Join match room
   socket.on('join_match', (matchId) => {
     socket.join(`match_${matchId}`);
     console.log(`User ${socket.userId} joined match ${matchId}`);
   });
-  
+
+  // Join tournament room
+  socket.on('join_tournament', (tournamentId) => {
+    socket.join(`tournament_${tournamentId}`);
+    console.log(`User ${socket.userId} joined tournament ${tournamentId}`);
+  });
+
   // Leave match room
   socket.on('leave_match', (matchId) => {
     socket.leave(`match_${matchId}`);
     console.log(`User ${socket.userId} left match ${matchId}`);
   });
-  
+
+  // Leave tournament room
+  socket.on('leave_tournament', (tournamentId) => {
+    socket.leave(`tournament_${tournamentId}`);
+    console.log(`User ${socket.userId} left tournament ${tournamentId}`);
+  });
+
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.userId}`);
   });

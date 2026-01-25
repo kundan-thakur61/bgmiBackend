@@ -22,6 +22,10 @@ const transactionSchema = new mongoose.Schema({
       'match_entry',       // Entry fee deducted
       'match_prize',       // Prize money credited
       'match_refund',      // Refund for cancelled match
+      'match_creation',    // Legacy: Match creation
+      'match_creation_fee', // Challenge creation fee (10%)
+      'prize_pool_escrow', // Prize pool held for challenge
+      'challenge_entry',   // Entry fee for accepting challenge
       'tournament_entry',  // Tournament entry fee
       'tournament_prize',  // Tournament prize
       'tournament_refund', // Tournament refund

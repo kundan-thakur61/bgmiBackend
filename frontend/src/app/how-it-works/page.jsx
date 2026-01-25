@@ -1,13 +1,35 @@
 import Link from 'next/link';
 import { Navbar, Footer } from '@/components/layout';
-import { createMetadata } from '@/lib/metadata';
+import { pageMetadata } from '@/lib/metadata';
+import { HowToSchema, FAQSchema } from '@/components/seo';
 
-export const metadata = createMetadata(
-  'How It Works',
-  'Learn how to play competitive PUBG Mobile and Free Fire matches on BattleZone. Simple steps: Sign up, add money, join matches, and win prizes.',
-  ['how to play', 'esports guide', 'tournament guide', 'getting started'],
-  'https://battlezone.com/how-it-works'
-);
+export const metadata = pageMetadata.howItWorks;
+
+// HowTo Schema data
+const howToData = {
+  name: 'How to Play BGMI Tournaments on BattleZone',
+  description: 'Complete guide to joining and playing BGMI, PUBG Mobile, and Free Fire tournaments on BattleZone for real money prizes.',
+  totalTime: 'PT10M',
+  cost: '10',
+  steps: [
+    { name: 'Create Your Account', text: 'Sign up with your email, phone number, and in-game ID. Verification takes just a few minutes.' },
+    { name: 'Complete KYC', text: 'Upload your Aadhaar or PAN card for identity verification. This ensures a secure gaming environment.' },
+    { name: 'Add Funds', text: 'Deposit money securely via UPI, cards, or net banking. Minimum deposit is just ₹10.' },
+    { name: 'Browse & Join Matches', text: 'Choose from BGMI, PUBG Mobile, or Free Fire matches. Select your preferred game mode and entry fee.' },
+    { name: 'Get Room Details', text: 'Before match starts, receive room ID and password via app notification and in your dashboard.' },
+    { name: 'Play & Win', text: 'Join the room, compete with other players, and climb the leaderboard to win prizes.' },
+    { name: 'Upload Results', text: 'After match completion, upload your game screenshot showing kills and rank for verification.' },
+    { name: 'Withdraw Winnings', text: 'Once results are verified, winnings are credited to your wallet. Withdraw anytime via UPI or bank.' },
+  ],
+};
+
+// FAQ data for how it works page
+const howItWorksFAQs = [
+  { question: 'How long does account verification take?', answer: 'Account creation is instant with OTP verification. KYC verification typically takes 2-4 hours during business hours, or up to 24 hours during peak times.' },
+  { question: 'What is the minimum amount to add to wallet?', answer: 'The minimum deposit amount is ₹50. You can use UPI, Paytm, cards, or net banking from any major Indian bank.' },
+  { question: 'Can I play without completing KYC?', answer: 'You can join free matches without KYC, but to participate in paid matches and withdraw winnings, KYC verification is mandatory.' },
+  { question: 'How early should I join the room?', answer: 'We recommend joining the custom room at least 5 minutes before the scheduled match time. Room credentials are shared 15 minutes before start.' },
+];
 
 export default function HowItWorksPage() {
   const steps = [
@@ -86,6 +108,8 @@ export default function HowItWorksPage() {
 
   return (
     <>
+      <HowToSchema howTo={howToData} />
+      <FAQSchema faqs={howItWorksFAQs} />
       <Navbar />
       
       <main className="min-h-screen pt-20">

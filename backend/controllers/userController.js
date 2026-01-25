@@ -7,7 +7,7 @@ exports.getProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId)
       .select('-otp -deviceFingerprints -password');
-    
+
     res.json({
       success: true,
       user
@@ -22,37 +22,37 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const allowedUpdates = ['name', 'email', 'dateOfBirth'];
     const updates = {};
-    
+
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
     });
-    
+
     // Validate age if date of birth is being updated
     if (updates.dateOfBirth) {
       const birthDate = new Date(updates.dateOfBirth);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       if (age < 18) {
         throw new BadRequestError('You must be 18 or older');
       }
-      
+
       updates.isAgeVerified = true;
     }
-    
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: updates },
       { new: true, runValidators: true }
     ).select('-otp -deviceFingerprints -password');
-    
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
@@ -69,24 +69,24 @@ exports.updateAvatar = async (req, res, next) => {
     if (!req.file) {
       throw new BadRequestError('Please upload an image');
     }
-    
+
     // Upload to Cloudinary
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     const result = await uploadImage(base64, 'battlezone/avatars');
-    
+
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { 
-        $set: { 
+      {
+        $set: {
           avatar: {
             url: result.url,
             publicId: result.publicId
           }
-        } 
+        }
       },
       { new: true }
     ).select('avatar');
-    
+
     res.json({
       success: true,
       message: 'Avatar updated successfully',
@@ -101,23 +101,23 @@ exports.updateAvatar = async (req, res, next) => {
 exports.updateGameProfiles = async (req, res, next) => {
   try {
     const { pubgMobile, freeFire } = req.body;
-    
+
     const updates = {};
-    
+
     if (pubgMobile) {
       updates['gameProfiles.pubgMobile'] = pubgMobile;
     }
-    
+
     if (freeFire) {
       updates['gameProfiles.freeFire'] = freeFire;
     }
-    
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: updates },
       { new: true }
     ).select('gameProfiles');
-    
+
     res.json({
       success: true,
       message: 'Game profiles updated successfully',
@@ -133,14 +133,14 @@ exports.getStats = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId)
       .select('matchesPlayed matchesWon totalEarnings level xp referralCount referralEarnings');
-    
+
     // Get match stats
     const matchStats = await Match.aggregate([
-      { 
-        $match: { 
+      {
+        $match: {
           'joinedUsers.user': req.user._id,
           status: 'completed'
-        } 
+        }
       },
       {
         $unwind: '$joinedUsers'
@@ -162,14 +162,14 @@ exports.getStats = async (req, res, next) => {
         }
       }
     ]);
-    
+
     const stats = matchStats[0] || {
       totalMatches: 0,
       totalKills: 0,
       totalPrize: 0,
       wins: 0
     };
-    
+
     res.json({
       success: true,
       stats: {
@@ -181,8 +181,8 @@ exports.getStats = async (req, res, next) => {
         totalEarnings: user.totalEarnings,
         referralCount: user.referralCount,
         referralEarnings: user.referralEarnings,
-        winRate: stats.totalMatches > 0 
-          ? ((stats.wins / stats.totalMatches) * 100).toFixed(1) 
+        winRate: stats.totalMatches > 0
+          ? ((stats.wins / stats.totalMatches) * 100).toFixed(1)
           : 0
       }
     });
@@ -195,18 +195,18 @@ exports.getStats = async (req, res, next) => {
 exports.getMatchHistory = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
-    
+
     const query = { 'joinedUsers.user': req.userId };
     if (status) query.status = status;
-    
+
     const matches = await Match.find(query)
       .select('title gameType matchType entryFee prizePool status scheduledAt joinedUsers')
       .sort({ scheduledAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
-    
+
     const total = await Match.countDocuments(query);
-    
+
     // Map to include user's specific data
     const matchHistory = matches.map(match => {
       const userSlot = match.joinedUsers.find(
@@ -228,7 +228,7 @@ exports.getMatchHistory = async (req, res, next) => {
         } : null
       };
     });
-    
+
     res.json({
       success: true,
       matches: matchHistory,
@@ -248,18 +248,18 @@ exports.getMatchHistory = async (req, res, next) => {
 exports.getTournamentHistory = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
-    
+
     const query = { 'participants.user': req.userId };
     if (status) query.status = status;
-    
+
     const tournaments = await Tournament.find(query)
       .select('title gameType format entryFee prizePool status startAt participants leaderboard')
       .sort({ startAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
-    
+
     const total = await Tournament.countDocuments(query);
-    
+
     // Map to include user's specific data
     const tournamentHistory = tournaments.map(tournament => {
       const participant = tournament.participants.find(
@@ -268,7 +268,7 @@ exports.getTournamentHistory = async (req, res, next) => {
       const leaderboardEntry = tournament.leaderboard.find(
         l => l.user.toString() === req.userId.toString()
       );
-      
+
       return {
         _id: tournament._id,
         title: tournament.title,
@@ -289,7 +289,7 @@ exports.getTournamentHistory = async (req, res, next) => {
         } : null
       };
     });
-    
+
     res.json({
       success: true,
       tournaments: tournamentHistory,
@@ -310,13 +310,13 @@ exports.getReferralInfo = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId)
       .select('referralCode referralCount referralEarnings');
-    
+
     // Get referred users
     const referredUsers = await User.find({ referredBy: req.userId })
       .select('name createdAt matchesPlayed')
       .sort({ createdAt: -1 })
       .limit(50);
-    
+
     // Get referral transactions
     const referralTransactions = await Transaction.find({
       user: req.userId,
@@ -324,7 +324,7 @@ exports.getReferralInfo = async (req, res, next) => {
     })
       .sort({ createdAt: -1 })
       .limit(20);
-    
+
     res.json({
       success: true,
       referral: {
@@ -345,7 +345,7 @@ exports.getNotificationPreferences = async (req, res, next) => {
   try {
     const user = await User.findById(req.userId)
       .select('notificationPreferences pushSubscription');
-    
+
     res.json({
       success: true,
       preferences: user.notificationPreferences,
@@ -360,20 +360,20 @@ exports.getNotificationPreferences = async (req, res, next) => {
 exports.updateNotificationPreferences = async (req, res, next) => {
   try {
     const { matchReminders, roomCredentials, withdrawalUpdates, promotions } = req.body;
-    
+
     const updates = {};
-    
+
     if (matchReminders !== undefined) updates['notificationPreferences.matchReminders'] = matchReminders;
     if (roomCredentials !== undefined) updates['notificationPreferences.roomCredentials'] = roomCredentials;
     if (withdrawalUpdates !== undefined) updates['notificationPreferences.withdrawalUpdates'] = withdrawalUpdates;
     if (promotions !== undefined) updates['notificationPreferences.promotions'] = promotions;
-    
+
     const user = await User.findByIdAndUpdate(
       req.userId,
       { $set: updates },
       { new: true }
     ).select('notificationPreferences');
-    
+
     res.json({
       success: true,
       message: 'Notification preferences updated',
@@ -388,14 +388,67 @@ exports.updateNotificationPreferences = async (req, res, next) => {
 exports.updatePushSubscription = async (req, res, next) => {
   try {
     const { subscription } = req.body;
-    
+
     await User.findByIdAndUpdate(req.userId, {
       $set: { pushSubscription: subscription }
     });
-    
+
     res.json({
       success: true,
       message: 'Push subscription updated'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Remove push subscription
+exports.removePushSubscription = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.userId, {
+      $unset: { pushSubscription: 1 }
+    });
+
+    res.json({
+      success: true,
+      message: 'Push subscription removed'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Search users (for team invites, etc.)
+exports.searchUsers = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.length < 2) {
+      return res.json({
+        success: true,
+        users: []
+      });
+    }
+
+    const users = await User.find({
+      $and: [
+        { _id: { $ne: req.userId } }, // Exclude self
+        { isBanned: false, isActive: true },
+        {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { 'gameProfiles.pubgMobile.inGameName': { $regex: q, $options: 'i' } },
+            { 'gameProfiles.freeFire.inGameName': { $regex: q, $options: 'i' } }
+          ]
+        }
+      ]
+    })
+      .select('name avatar level gameProfiles')
+      .limit(20);
+
+    res.json({
+      success: true,
+      users
     });
   } catch (error) {
     next(error);

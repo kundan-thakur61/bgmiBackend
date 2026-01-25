@@ -6,7 +6,7 @@ exports.getDashboard = async (req, res, next) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const [totalUsers, newUsersToday, activeMatches, pendingWithdrawals, pendingKyc, openTickets] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ createdAt: { $gte: today } }),
@@ -15,14 +15,14 @@ exports.getDashboard = async (req, res, next) => {
       KYC.countDocuments({ status: 'pending' }),
       Ticket.countDocuments({ status: { $in: ['open', 'in_progress'] } })
     ]);
-    
+
     const todayRevenue = await Transaction.aggregate([
       { $match: { type: 'debit', category: 'match_entry', createdAt: { $gte: today } } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
-    
+
     const recentActivity = await AdminLog.find().sort({ createdAt: -1 }).limit(10).populate('admin', 'name');
-    
+
     res.json({
       success: true,
       dashboard: {
@@ -45,13 +45,13 @@ exports.getStats = async (req, res, next) => {
   try {
     const { period = '7d' } = req.query;
     let startDate = new Date();
-    
+
     switch (period) {
       case '24h': startDate.setHours(startDate.getHours() - 24); break;
       case '7d': startDate.setDate(startDate.getDate() - 7); break;
       case '30d': startDate.setDate(startDate.getDate() - 30); break;
     }
-    
+
     const [userGrowth, revenueByDay] = await Promise.all([
       User.aggregate([
         { $match: { createdAt: { $gte: startDate } } },
@@ -64,7 +64,7 @@ exports.getStats = async (req, res, next) => {
         { $sort: { _id: 1 } }
       ])
     ]);
-    
+
     res.json({ success: true, stats: { period, userGrowth, revenueByDay } });
   } catch (error) {
     next(error);
@@ -76,7 +76,7 @@ exports.getUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search, role, isBanned, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
     const query = {};
-    
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -86,15 +86,15 @@ exports.getUsers = async (req, res, next) => {
     }
     if (role) query.role = role;
     if (isBanned !== undefined) query.isBanned = isBanned === 'true';
-    
+
     const users = await User.find(query)
       .select('-otp -password -deviceFingerprints')
       .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
-    
+
     const total = await User.countDocuments(query);
-    
+
     res.json({ success: true, users, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) } });
   } catch (error) {
     next(error);
@@ -106,10 +106,10 @@ exports.getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select('-otp -password');
     if (!user) throw new NotFoundError('User not found');
-    
+
     const transactions = await Transaction.find({ user: user._id }).sort({ createdAt: -1 }).limit(10);
     const matches = await Match.find({ 'joinedUsers.user': user._id }).select('title gameType entryFee status').sort({ scheduledAt: -1 }).limit(10);
-    
+
     res.json({ success: true, user, transactions, matches });
   } catch (error) {
     next(error);
@@ -123,10 +123,10 @@ exports.updateUser = async (req, res, next) => {
     ['name', 'email', 'isKycVerified', 'isAgeVerified'].forEach(field => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     });
-    
+
     const user = await User.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true }).select('-otp -password');
     if (!user) throw new NotFoundError('User not found');
-    
+
     res.json({ success: true, message: 'User updated successfully', user });
   } catch (error) {
     next(error);
@@ -140,15 +140,15 @@ exports.banUser = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) throw new NotFoundError('User not found');
     if (user.role === 'super_admin') throw new BadRequestError('Cannot ban super admin');
-    
+
     user.isBanned = true;
     user.banReason = reason;
     user.bannedAt = new Date();
     user.bannedBy = req.userId;
     await user.save();
-    
+
     await AdminLog.log({ admin: req.userId, action: 'user_ban', targetType: 'user', targetId: user._id, description: `Banned user: ${user.name}. Reason: ${reason}`, ip: req.ip, severity: 'high' });
-    
+
     res.json({ success: true, message: 'User banned successfully' });
   } catch (error) {
     next(error);
@@ -160,15 +160,15 @@ exports.unbanUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) throw new NotFoundError('User not found');
-    
+
     user.isBanned = false;
     user.banReason = undefined;
     user.bannedAt = undefined;
     user.bannedBy = undefined;
     await user.save();
-    
+
     await AdminLog.log({ admin: req.userId, action: 'user_unban', targetType: 'user', targetId: user._id, description: `Unbanned user: ${user.name}`, ip: req.ip });
-    
+
     res.json({ success: true, message: 'User unbanned successfully' });
   } catch (error) {
     next(error);
@@ -180,18 +180,18 @@ exports.changeUserRole = async (req, res, next) => {
   try {
     const { role } = req.body;
     const validRoles = ['user', 'host', 'match_manager', 'finance_manager', 'support', 'admin'];
-    
+
     if (!validRoles.includes(role)) throw new BadRequestError('Invalid role');
-    
+
     const user = await User.findById(req.params.id);
     if (!user) throw new NotFoundError('User not found');
-    
+
     const previousRole = user.role;
     user.role = role;
     await user.save();
-    
+
     await AdminLog.log({ admin: req.userId, action: 'user_role_change', targetType: 'user', targetId: user._id, description: `Changed role from ${previousRole} to ${role}`, previousData: { role: previousRole }, newData: { role }, ip: req.ip, severity: 'high' });
-    
+
     res.json({ success: true, message: 'User role updated', user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
     next(error);
@@ -203,10 +203,10 @@ exports.adjustWallet = async (req, res, next) => {
   try {
     const { amount, type, reason } = req.body;
     if (!amount || !type || !reason) throw new BadRequestError('Amount, type, and reason are required');
-    
+
     const user = await User.findById(req.params.id);
     if (!user) throw new NotFoundError('User not found');
-    
+
     await Transaction.createTransaction({
       user: user._id,
       type,
@@ -216,11 +216,11 @@ exports.adjustWallet = async (req, res, next) => {
       processedBy: req.userId,
       ip: req.ip
     });
-    
+
     const updatedUser = await User.findById(req.params.id).select('walletBalance');
-    
+
     await AdminLog.log({ admin: req.userId, action: type === 'credit' ? 'wallet_credit' : 'wallet_debit', targetType: 'user', targetId: user._id, description: `${type === 'credit' ? 'Credited' : 'Debited'} ${amount} to ${user.name}. Reason: ${reason}`, ip: req.ip, severity: 'high' });
-    
+
     res.json({ success: true, message: 'Wallet adjusted', newBalance: updatedUser.walletBalance });
   } catch (error) {
     next(error);
@@ -232,7 +232,7 @@ exports.getLogs = async (req, res, next) => {
   try {
     const { page = 1, limit = 50, action, adminId, startDate, endDate } = req.query;
     const query = {};
-    
+
     if (action) query.action = action;
     if (adminId) query.admin = adminId;
     if (startDate || endDate) {
@@ -240,10 +240,10 @@ exports.getLogs = async (req, res, next) => {
       if (startDate) query.createdAt.$gte = new Date(startDate);
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
-    
+
     const logs = await AdminLog.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit)).populate('admin', 'name email role');
     const total = await AdminLog.countDocuments(query);
-    
+
     res.json({ success: true, logs, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) } });
   } catch (error) {
     next(error);
@@ -313,22 +313,22 @@ exports.getRevenueReport = async (req, res, next) => {
       if (startDate) match.createdAt.$gte = new Date(startDate);
       if (endDate) match.createdAt.$lte = new Date(endDate);
     }
-    
+
     const revenue = await Transaction.aggregate([
       { $match: { ...match, type: 'debit', category: { $in: ['match_entry', 'tournament_entry'] } } },
       { $group: { _id: '$category', total: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]);
-    
+
     const withdrawals = await Transaction.aggregate([
       { $match: { ...match, type: 'debit', category: 'withdrawal' } },
       { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]);
-    
+
     const deposits = await Transaction.aggregate([
       { $match: { ...match, type: 'credit', category: 'deposit', status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]);
-    
+
     res.json({ success: true, report: { revenue, withdrawals: withdrawals[0] || { total: 0, count: 0 }, deposits: deposits[0] || { total: 0, count: 0 } } });
   } catch (error) {
     next(error);
@@ -344,7 +344,7 @@ exports.getUserReport = async (req, res, next) => {
       User.countDocuments({ isBanned: true }),
       User.aggregate([{ $group: { _id: '$level', count: { $sum: 1 } } }])
     ]);
-    
+
     res.json({ success: true, report: { total, verified, banned, byLevel } });
   } catch (error) {
     next(error);
@@ -359,8 +359,193 @@ exports.getMatchReport = async (req, res, next) => {
       Match.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
       Match.aggregate([{ $group: { _id: '$gameType', count: { $sum: 1 }, totalPrize: { $sum: '$prizePool' } } }])
     ]);
-    
+
     res.json({ success: true, report: { total, byStatus, byGame } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get dispute statistics
+exports.getDisputeStats = async (req, res, next) => {
+  try {
+    const Dispute = require('../models').Dispute;
+
+    const [total, byStatus, recentDisputes] = await Promise.all([
+      Dispute.countDocuments(),
+      Dispute.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      Dispute.find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('submittedBy', 'name phone')
+        .populate('match', 'title')
+        .populate('assignedTo', 'name')
+    ]);
+
+    const statusCounts = {
+      open: 0,
+      in_progress: 0,
+      resolved: 0,
+      rejected: 0
+    };
+
+    byStatus.forEach(item => {
+      if (statusCounts.hasOwnProperty(item._id)) {
+        statusCounts[item._id] = item.count;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        total,
+        ...statusCounts,
+        pending: statusCounts.open + statusCounts.in_progress,
+        recentDisputes
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Broadcast push notification to users
+exports.broadcastNotification = async (req, res, next) => {
+  try {
+    const { title, message, type, url, targetAudience, level } = req.body;
+
+    if (!title || !message) {
+      throw new BadRequestError('Title and message are required');
+    }
+
+    const Notification = require('../models').Notification;
+    const pushService = require('../utils/pushService');
+
+    // Build user query based on target audience
+    let userQuery = { isBanned: false };
+
+    switch (targetAudience) {
+      case 'verified':
+        userQuery.isKycVerified = true;
+        break;
+      case 'level':
+        if (level) userQuery.level = parseInt(level);
+        break;
+      case 'all':
+      default:
+        // No additional filters
+        break;
+    }
+
+    // Get users with push subscriptions
+    const users = await User.find({
+      ...userQuery,
+      pushSubscription: { $exists: true, $ne: null }
+    }).select('_id pushSubscription');
+
+    // Create in-app notifications for all matching users
+    const allMatchingUsers = await User.find(userQuery).select('_id');
+
+    const notificationPromises = allMatchingUsers.map(user =>
+      Notification.create({
+        user: user._id,
+        type: type || 'announcement',
+        title,
+        message,
+        data: { url: url || '/' }
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    // Send push notifications
+    let pushResults = { success: 0, failed: 0, expired: [] };
+
+    if (pushService.isEnabled() && users.length > 0) {
+      const subscriptions = users.map(u => ({
+        userId: u._id,
+        subscription: u.pushSubscription
+      }));
+
+      pushResults = await pushService.sendBulkPush(subscriptions, {
+        title,
+        body: message,
+        url: url || '/',
+        type: type || 'announcement'
+      });
+
+      // Remove expired subscriptions
+      if (pushResults.expired.length > 0) {
+        await User.updateMany(
+          { _id: { $in: pushResults.expired } },
+          { $unset: { pushSubscription: 1 } }
+        );
+      }
+    }
+
+    await AdminLog.log({
+      admin: req.userId,
+      action: 'broadcast_notification',
+      targetType: 'system',
+      description: `Broadcast notification: "${title}" to ${allMatchingUsers.length} users (${targetAudience || 'all'})`,
+      newData: { title, message, targetAudience, recipients: allMatchingUsers.length },
+      ip: req.ip,
+      severity: 'medium'
+    });
+
+    res.json({
+      success: true,
+      message: 'Broadcast sent successfully',
+      results: {
+        notificationsCreated: allMatchingUsers.length,
+        pushSent: pushResults.success,
+        pushFailed: pushResults.failed,
+        expiredSubscriptions: pushResults.expired.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get referral statistics
+exports.getReferralStats = async (req, res, next) => {
+  try {
+    const referralStats = await User.aggregate([
+      { $match: { referredBy: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 30 }
+    ]);
+
+    const topReferrers = await User.aggregate([
+      { $match: { referralCount: { $gt: 0 } } },
+      { $project: { name: 1, phone: 1, referralCount: 1, referralEarnings: 1 } },
+      { $sort: { referralCount: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const totalReferrals = await User.countDocuments({ referredBy: { $exists: true, $ne: null } });
+    const totalEarnings = await User.aggregate([
+      { $group: { _id: null, total: { $sum: '$referralEarnings' } } }
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        totalReferrals,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        dailyReferrals: referralStats,
+        topReferrers
+      }
+    });
   } catch (error) {
     next(error);
   }

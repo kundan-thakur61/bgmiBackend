@@ -174,6 +174,29 @@ const validationChains = {
     validate
   ],
   
+  createUserMatch: [
+    body('title').trim().isLength({ min: 3, max: 100 }).withMessage('Title must be between 3 and 100 characters'),
+    validators.gameType,
+    validators.matchType,
+    validators.mode,
+    validators.entryFee,
+    validators.prizePool,
+    validators.maxSlots,
+    validators.scheduledAt,
+    // Optional fields
+    body('map').optional().trim(),
+    body('perKillPrize').optional().isNumeric().withMessage('Per kill prize must be a number'),
+    body('minLevelRequired').optional().isIn(['bronze', 'silver', 'gold', 'platinum', 'diamond']).withMessage('Invalid minimum level required'),
+    body('rules').optional().isArray().withMessage('Rules must be an array'),
+    body('isFeatured').optional().isBoolean().withMessage('isFeatured must be a boolean'),
+    body('tags').optional().isArray().withMessage('Tags must be an array'),
+    body('streamUrl').optional().isURL().withMessage('Stream URL must be a valid URL'),
+    body('spectatorSlots').optional().isInt({ min: 0 }).withMessage('Spectator slots must be a non-negative integer'),
+    body('roomId').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Room ID must be between 1 and 50 characters'),
+    body('roomPassword').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Room password must be between 1 and 50 characters'),
+    validate
+  ],
+  
   joinMatch: [
     validators.matchId,
     validators.inGameId,
