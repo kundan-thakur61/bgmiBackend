@@ -1,6 +1,8 @@
+import { SITE_CONFIG } from './metadata';
+
 export const seoConfig = {
   siteName: 'BattleZone',
-  siteUrl: 'https://battlezone.com',
+  siteUrl: SITE_CONFIG.baseUrl || 'https://battlezone.com',
   defaultTitle: 'BattleZone - India\'s #1 BGMI & Free Fire Esports Platform',
   defaultDescription: 'Join India\'s premier esports platform. Play BGMI, Free Fire tournaments, win real cash prizes. 100% secure, instant withdrawals, 24/7 support.',
   keywords: 'BGMI tournaments, Free Fire tournaments, esports India, gaming tournaments, online gaming, cash prizes, PUBG Mobile India, competitive gaming, esports platform',

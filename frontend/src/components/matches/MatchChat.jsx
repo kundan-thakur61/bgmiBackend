@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { sendMessage, getMatchMessages } from '@/lib/api';
+import { sendMessage, getMatchMessages, SOCKET_URL } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { io } from 'socket.io-client';
 
@@ -39,7 +39,7 @@ export default function MatchChat({ matchId, isJoined = false }) {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const socketInstance = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+        const socketInstance = io(SOCKET_URL, {
             auth: { token }
         });
 

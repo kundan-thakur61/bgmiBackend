@@ -35,16 +35,30 @@
 @keyframes neonPulse {
   from {
     text-shadow:
-      0 0 10px var(--neon-cyan),
-      0 0 20px var(--neon-cyan),
-      0 0 40px var(--neon-cyan);
+      0 0 10px var(--neon-cyan);
   }
 
   to {
     text-shadow:
-      0 0 20px var(--neon-cyan),
-      0 0 40px var(--neon-cyan),
-      0 0 80px var(--neon-cyan);
+      0 0 20px var(--neon-cyan);
+  }
+}
+
+@media (min-width: 768px) {
+  @keyframes neonPulse {
+    from {
+      text-shadow:
+        0 0 10px var(--neon-cyan),
+        0 0 20px var(--neon-cyan),
+        0 0 40px var(--neon-cyan);
+    }
+
+    to {
+      text-shadow:
+        0 0 20px var(--neon-cyan),
+        0 0 40px var(--neon-cyan),
+        0 0 80px var(--neon-cyan);
+    }
   }
 }
 
@@ -131,18 +145,40 @@
 
 /* Stat Glow */
 .stat-glow {
-  animation: statPulse 2s ease-in-out infinite;
+  will-change: filter;
+  transform: translateZ(0);
+  /* Hardware acceleration */
+}
+
+@media (min-width: 768px) {
+  .stat-glow {
+    animation: statPulse 2s ease-in-out infinite;
+  }
 }
 
 @keyframes statPulse {
 
   0%,
   100% {
-    filter: drop-shadow(0 0 10px var(--neon-cyan));
+    filter: drop-shadow(0 0 5px var(--neon-cyan));
   }
 
   50% {
-    filter: drop-shadow(0 0 25px var(--neon-cyan)) drop-shadow(0 0 40px var(--neon-cyan));
+    filter: drop-shadow(0 0 15px var(--neon-cyan));
+  }
+}
+
+@media (min-width: 768px) {
+  @keyframes statPulse {
+
+    0%,
+    100% {
+      filter: drop-shadow(0 0 10px var(--neon-cyan));
+    }
+
+    50% {
+      filter: drop-shadow(0 0 25px var(--neon-cyan)) drop-shadow(0 0 40px var(--neon-cyan));
+    }
   }
 }
 
@@ -153,6 +189,8 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 
 .game-card::after {
@@ -172,9 +210,15 @@
 }
 
 .game-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-4px) scale(1.01);
   border-color: var(--neon-cyan);
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 768px) {
+  .game-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
 }
 
 /* Feature Card */

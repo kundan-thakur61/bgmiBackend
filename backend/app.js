@@ -36,13 +36,17 @@ const { performanceMonitor } = require('./middleware/performance');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy for rate limiting behind load balancers (Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
     origin: [
       process.env.FRONTEND_URL,
       'http://localhost:3000',
-      'http://127.0.0.1:3000'
+      'http://127.0.0.1:3000',
+      'https://bgmifrontendcode.vercel.app'
     ].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true
@@ -57,7 +61,8 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
     'http://localhost:3000',
-    'http://127.0.0.1:3000'
+    'http://127.0.0.1:3000',
+    'https://bgmifrontendcode.vercel.app'
   ].filter(Boolean),
   credentials: true
 }));
@@ -110,6 +115,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlezon
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.send('BattleZone API is running 🚀');
 });
 
 // API Routes

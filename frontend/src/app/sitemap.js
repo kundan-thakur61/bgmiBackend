@@ -3,7 +3,7 @@ import { seoConfig } from '@/lib/seo';
 export default async function sitemap() {
   const baseUrl = seoConfig.siteUrl;
   const now = new Date();
-  
+
   // Static routes
   const staticRoutes = [
     { url: '', changeFrequency: 'daily', priority: 1.0 },
@@ -20,22 +20,42 @@ export default async function sitemap() {
     { url: '/terms-conditions', changeFrequency: 'yearly', priority: 0.4 },
   ];
 
+  const getBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      let url = process.env.NEXT_PUBLIC_API_URL;
+      // Safety check for localhost in production
+      if (process.env.NODE_ENV === 'production' && url.includes('localhost') && !process.env.ALLOW_LOCAL_API) {
+        // Fallback or ignore
+      } else {
+        if (url.endsWith('/')) url = url.slice(0, -1);
+        if (!url.endsWith('/api')) url += '/api';
+        return url;
+      }
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://bgmibackend-5gu6.onrender.com/api';
+    }
+
+    return 'http://localhost:5000/api';
+  };
+
   // Dynamic routes - fetch from API
   const dynamicRoutes = [];
-  
+
   try {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-    
+    const API_BASE_URL = getBaseUrl();
+
     // Fetch upcoming matches
     try {
       const matchesResponse = await fetch(`${API_BASE_URL}/matches?status=upcoming,registration_open&limit=100`, {
         next: { revalidate: 3600 }, // Revalidate every hour
       });
-      
+
       if (matchesResponse.ok) {
         const matchesData = await matchesResponse.json();
         const matches = matchesData.matches || matchesData.data || [];
-        
+
         matches.forEach(match => {
           dynamicRoutes.push({
             url: `/matches/${match._id || match.id}`,
@@ -48,17 +68,17 @@ export default async function sitemap() {
     } catch (error) {
       console.error('Error fetching matches for sitemap:', error);
     }
-    
+
     // Fetch upcoming tournaments
     try {
       const tournamentsResponse = await fetch(`${API_BASE_URL}/tournaments?status=upcoming,registration_open&limit=100`, {
         next: { revalidate: 3600 }, // Revalidate every hour
       });
-      
+
       if (tournamentsResponse.ok) {
         const tournamentsData = await tournamentsResponse.json();
         const tournaments = tournamentsData.tournaments || tournamentsData.data || [];
-        
+
         tournaments.forEach(tournament => {
           dynamicRoutes.push({
             url: `/tournaments/${tournament._id || tournament.id}`,

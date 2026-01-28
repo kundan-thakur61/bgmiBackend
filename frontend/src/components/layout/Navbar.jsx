@@ -141,7 +141,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-lg text-dark-300 hover:text-white hover:bg-dark-800"
+              className="p-2 rounded-lg text-dark-300 hover:text-white hover:bg-dark-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isMenuOpen ? (
@@ -154,7 +154,7 @@ export default function Navbar() {
           </div>
 
           {isMenuOpen && (
-            <div className="py-4 border-t border-dark-700 animate-fadeIn">
+            <div className="py-4 border-t border-dark-700 animate-slideDown shadow-xl bg-dark-900/95 backdrop-blur-xl absolute top-full left-0 right-0 z-50">
               <div className="space-y-1">
                 {displayNavLinks.map((link) => (
                   <Link
@@ -220,8 +220,8 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-colors ${isActive
-                    ? 'text-primary-400'
-                    : 'text-dark-400 hover:text-white'
+                  ? 'text-primary-400'
+                  : 'text-dark-400 hover:text-white'
                   }`}
               >
                 {item.icon}

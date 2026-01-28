@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { api, API_BASE_URL } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
@@ -14,11 +15,26 @@ export default function LoginPage() {
   const [devOtp, setDevOtp] = useState(''); // For development testing
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleUrl, setGoogleUrl] = useState(`${API_BASE_URL}/auth/google`);
+
+  useEffect(() => {
+    // Client-side safety: ensure we don't send prod users to localhost
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1';
+
+      if (isProduction && API_BASE_URL.includes('localhost')) {
+        // Force production backend if we are on a real domain but API is localhost
+        // This fixes the issue if Vercel env vars are missing
+        setGoogleUrl('https://bgmibackend-5gu6.onrender.com/api/auth/google');
+      }
+    }
+  }, []);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!/^[6-9]\d{9}$/.test(phone)) {
       setError('Please enter a valid 10-digit mobile number');
       return;
@@ -82,8 +98,8 @@ export default function LoginPage() {
             {step === 'phone' ? 'Login / Sign Up' : 'Verify OTP'}
           </h1>
           <p className="text-dark-400 text-center mb-8">
-            {step === 'phone' 
-              ? 'Enter your mobile number to continue' 
+            {step === 'phone'
+              ? 'Enter your mobile number to continue'
               : `Enter the OTP sent to +91 ${phone}`}
           </p>
 
@@ -142,7 +158,7 @@ export default function LoginPage() {
 
               {/* Google Sign In */}
               <a
-                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`}
+                href={googleUrl}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-dark-600 rounded-lg hover:bg-dark-700 transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

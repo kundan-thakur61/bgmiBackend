@@ -1,6 +1,37 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const getBaseUrl = () => {
+  // If explicitly set, use it (unless it's localhost in production - safety check)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    let url = process.env.NEXT_PUBLIC_API_URL;
+
+    // Safety check: if production build but URL is localhost, ignore it unless intentionally creating a local prod build
+    if (process.env.NODE_ENV === 'production' && url.includes('localhost') && !process.env.ALLOW_LOCAL_API) {
+      console.warn('Blocked localhost API URL in production environment');
+    } else {
+      // Remove trailing slash if present
+      if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+      }
+      // Append /api if not present
+      if (!url.endsWith('/api')) {
+        url += '/api';
+      }
+      return url;
+    }
+  }
+
+  // Production fallback
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://bgmibackend-5gu6.onrender.com/api';
+  }
+
+  // Development fallback
+  return 'http://localhost:5000/api';
+};
+
+export const API_BASE_URL = getBaseUrl();
+export const SOCKET_URL = API_BASE_URL.replace('/api', '');
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

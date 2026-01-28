@@ -12,7 +12,7 @@
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
-  
+
   --color-dark-50: #f8fafc;
   --color-dark-100: #f1f5f9;
   --color-dark-200: #e2e8f0;
@@ -24,14 +24,14 @@
   --color-dark-800: #1e293b;
   --color-dark-900: #0f172a;
   --color-dark-950: #020617;
-  
+
   --color-gaming-orange: #ff6b35;
   --color-gaming-purple: #7c3aed;
   --color-gaming-cyan: #06b6d4;
   --color-gaming-green: #10b981;
   --color-gaming-red: #ef4444;
   --color-gaming-yellow: #f59e0b;
-  
+
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Poppins', system-ui, sans-serif;
   --font-gaming: 'Rajdhani', sans-serif;
@@ -40,6 +40,7 @@
 /* Base styles */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -270,6 +271,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -277,9 +279,12 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 5px rgb(59 130 246 / 0.5), 0 0 20px rgb(59 130 246 / 0.3);
   }
+
   50% {
     box-shadow: 0 0 10px rgb(59 130 246 / 0.8), 0 0 40px rgb(59 130 246 / 0.5);
   }
@@ -291,4 +296,20 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
 }

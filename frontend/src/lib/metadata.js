@@ -1,6 +1,33 @@
+const getBaseUrl = () => {
+  // 1. Check for manually set site URL
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')) {
+      // Ignore localhost in production to prevent redirect loops/issues
+      // fallback to other methods
+    } else {
+      return process.env.NEXT_PUBLIC_SITE_URL;
+    }
+  }
+
+  // 2. Check for Vercel URL (automatically set by Vercel)
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+  }
+
+  // 3. Check for standard Vercel URL (server-side only usually, but good to have)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // 4. Default fallbacks
+  return process.env.NODE_ENV === 'production'
+    ? 'https://battlezone.com'
+    : 'http://localhost:3000';
+};
+
 export const SITE_CONFIG = {
   name: 'BattleZone',
-  baseUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://battlezone.com',
+  baseUrl: getBaseUrl(),
   description: 'Play BGMI, PUBG Mobile & Free Fire tournaments for real money. Join 50,000+ players. Entry from ₹10. Instant withdrawals.',
   author: 'BattleZone',
   twitterHandle: '@BattleZone',
@@ -116,7 +143,7 @@ export const pageMetadata = {
     'https://battlezone.com/matches',
     '/og-matches.jpg'
   ),
-  
+
   tournaments: createMetadata(
     'BGMI & Free Fire Tournaments India | ₹50,000+ Daily Prizes',
     'Weekly tournaments with massive prize pools. Solo, Duo & Squad formats. Register free, compete against India\'s best players. See today\'s tournaments →',
@@ -124,42 +151,42 @@ export const pageMetadata = {
     'https://battlezone.com/tournaments',
     '/og-tournaments.jpg'
   ),
-  
+
   howItWorks: createMetadata(
     'How to Join BGMI Tournaments & Win Real Money',
     'Learn how BattleZone works. Simple steps: Sign up, add money, join matches, play, win prizes. Complete guide with screenshots & tips.',
     ['how to play BGMI tournaments', 'tournament guide', 'esports getting started', 'BattleZone tutorial'],
     'https://battlezone.com/how-it-works'
   ),
-  
+
   wallet: createMetadata(
     'Wallet - Add Money & Withdraw Winnings',
     'Secure wallet for tournament payments. Add via UPI, Paytm, bank transfer. Withdraw winnings in 24-48 hours. Track all transactions.',
     ['gaming wallet', 'esports wallet', 'withdraw gaming winnings', 'add money for gaming'],
     'https://battlezone.com/wallet'
   ),
-  
+
   blog: createMetadata(
     'Gaming Blog - BGMI Tips, Strategies & Esports News',
     'Expert BGMI & PUBG Mobile tips, tournament strategies, pro player guides, and latest esports news. Level up your game!',
     ['BGMI tips', 'PUBG Mobile guide', 'esports news India', 'gaming strategies', 'Free Fire tips'],
     'https://battlezone.com/blog'
   ),
-  
+
   fairPlay: createMetadata(
     'Fair Play Policy - Anti-Cheat & Fraud Prevention',
     'Learn about BattleZone\'s advanced anti-cheat systems. Screenshot verification, EXIF analysis, and manual review ensure fair tournaments.',
     ['anti-cheat gaming', 'fair play esports', 'fraud prevention gaming', 'cheat detection'],
     'https://battlezone.com/fair-play'
   ),
-  
+
   rules: createMetadata(
     'Tournament Rules & Guidelines',
     'Official BattleZone tournament rules. Match formats, scoring system, prize distribution, and player conduct guidelines.',
     ['tournament rules', 'esports rules', 'gaming competition rules', 'BGMI tournament rules'],
     'https://battlezone.com/rules'
   ),
-  
+
   kyc: createMetadata(
     'KYC Verification - Secure Your Account',
     'Complete KYC verification to enable withdrawals. Simple process using Aadhaar or PAN card. Secure and confidential.',

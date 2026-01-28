@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { sendMessage, getMatchMessages, getTournamentMessages } from '@/lib/api';
+import { sendMessage, getMatchMessages, getTournamentMessages, SOCKET_URL } from '@/lib/api';
 import { io } from 'socket.io-client';
 
 export default function Chat({ matchId, tournamentId }) {
@@ -17,7 +17,7 @@ export default function Chat({ matchId, tournamentId }) {
     if (!isAuthenticated) return;
 
     // Initialize socket connection
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const socketUrl = SOCKET_URL;
     const newSocket = io(socketUrl, { withCredentials: true });
     setSocket(newSocket);
 
@@ -109,11 +109,10 @@ export default function Chat({ matchId, tournamentId }) {
                 className={`flex ${msg.sender._id === user._id ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    msg.sender._id === user._id
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-700 text-gray-200'
-                  }`}
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.sender._id === user._id
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-700 text-gray-200'
+                    }`}
                 >
                   <div className="flex items-center mb-1">
                     <span className="font-semibold text-sm mr-2">

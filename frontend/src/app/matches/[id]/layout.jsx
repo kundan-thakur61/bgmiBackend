@@ -1,33 +1,34 @@
 import { generateMetadata as genMeta } from '@/lib/seo';
 
 export async function generateMetadata({ params }) {
+  const { id } = await params;
   // Fetch match data for metadata
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-  
+  const API_BASE_URL = (await import('@/lib/api')).API_BASE_URL;
+
   try {
-    const response = await fetch(`${API_BASE_URL}/matches/${params.id}`, {
+    const response = await fetch(`${API_BASE_URL}/matches/${id}`, {
       next: { revalidate: 60 }, // Revalidate every minute
     });
-    
+
     if (!response.ok) {
       return genMeta({
         title: 'Match Details',
         description: 'View match details on BattleZone',
-        url: `/matches/${params.id}`,
+        url: `/matches/${id}`,
       });
     }
-    
+
     const data = await response.json();
     const match = data.match;
-    
+
     if (!match) {
       return genMeta({
         title: 'Match Details',
         description: 'View match details on BattleZone',
-        url: `/matches/${params.id}`,
+        url: `/matches/${id}`,
       });
     }
-    
+
     const title = `${match.title} - Join Now | BattleZone`;
     const description = `Join ${match.title} on BattleZone. Entry: ₹${match.entryFee}, Prize: ₹${match.prizePool}. ${match.mode} ${match.matchType} match. ${match.gameType?.replace('_', ' ')}. Register now!`;
     const keywords = [
@@ -39,12 +40,12 @@ export async function generateMetadata({ params }) {
       'esports match',
       'real money gaming',
     ].filter(Boolean).join(', ');
-    
+
     return genMeta({
       title,
       description,
       keywords,
-      url: `/matches/${params.id}`,
+      url: `/matches/${id}`,
       image: match.banner?.url || '/og-matches.jpg',
       type: 'website',
     });
@@ -52,7 +53,7 @@ export async function generateMetadata({ params }) {
     return genMeta({
       title: 'Match Details',
       description: 'View match details on BattleZone',
-      url: `/matches/${params.id}`,
+      url: `/matches/${id}`,
     });
   }
 }

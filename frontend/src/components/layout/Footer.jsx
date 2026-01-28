@@ -34,7 +34,7 @@ export default function Footer() {
   return (
     <footer className="bg-dark-950 border-t border-dark-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
@@ -68,7 +68,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {footerLinks.platform.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-dark-400 hover:text-white text-sm transition-colors">
+                  <Link href={link.href} className="flex items-center text-dark-400 hover:text-white text-sm transition-colors py-2">
                     {link.label}
                   </Link>
                 </li>
@@ -82,7 +82,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-dark-400 hover:text-white text-sm transition-colors">
+                  <Link href={link.href} className="flex items-center text-dark-400 hover:text-white text-sm transition-colors py-2">
                     {link.label}
                   </Link>
                 </li>
@@ -96,7 +96,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-dark-400 hover:text-white text-sm transition-colors">
+                  <Link href={link.href} className="flex items-center text-dark-400 hover:text-white text-sm transition-colors py-2">
                     {link.label}
                   </Link>
                 </li>
