@@ -209,9 +209,13 @@ exports.register = async (req, res, next) => {
 exports.googleAuth = (req, res) => {
   // Determine callback URL based on environment
   let callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+  const host = req.get('host');
 
-  if (process.env.NODE_ENV === 'production') {
-    // Force production URL if not explicitly set correctly or still localhost
+  // Smart detection: If we are on Render (production), force the correct callback URL
+  // This fixes the issue where NODE_ENV might not be 'production' or GOOGLE_CALLBACK_URL is missing
+  if (host && host.includes('onrender.com')) {
+    callbackUrl = `https://${host}/api/auth/google/callback`;
+  } else if (process.env.NODE_ENV === 'production') {
     if (!callbackUrl || callbackUrl.includes('localhost')) {
       callbackUrl = 'https://bgmibackend-5gu6.onrender.com/api/auth/google/callback';
     }
@@ -234,7 +238,12 @@ exports.googleCallback = async (req, res, next) => {
 
     // Determine callback URL (must match the one used in googleAuth)
     let callbackUrl = process.env.GOOGLE_CALLBACK_URL;
-    if (process.env.NODE_ENV === 'production') {
+    const host = req.get('host');
+
+    // Same smart detection as above
+    if (host && host.includes('onrender.com')) {
+      callbackUrl = `https://${host}/api/auth/google/callback`;
+    } else if (process.env.NODE_ENV === 'production') {
       if (!callbackUrl || callbackUrl.includes('localhost')) {
         callbackUrl = 'https://bgmibackend-5gu6.onrender.com/api/auth/google/callback';
       }
@@ -303,8 +312,13 @@ exports.googleCallback = async (req, res, next) => {
     // Redirect to frontend with token
     let frontendUrl = process.env.FRONTEND_URL;
 
-    if (process.env.NODE_ENV === 'production') {
-      // Force production URL if not explicitly set correctly
+    // Smart detection for frontend URL as well
+    if (host && host.includes('onrender.com')) {
+      // If backend is on Render, and frontend URL is missing or localhost, default to Vercel
+      if (!frontendUrl || frontendUrl.includes('localhost')) {
+        frontendUrl = 'https://kundan-thakur61-bgmifrontendcod.vercel.app';
+      }
+    } else if (process.env.NODE_ENV === 'production') {
       if (!frontendUrl || frontendUrl.includes('localhost')) {
         frontendUrl = 'https://kundan-thakur61-bgmifrontendcod.vercel.app';
       }
