@@ -36,6 +36,9 @@ const { performanceMonitor } = require('./middleware/performance');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy for rate limiting behind load balancers (Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Socket.io setup
 const io = new Server(server, {
   cors: {
