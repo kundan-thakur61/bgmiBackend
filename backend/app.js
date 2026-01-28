@@ -46,7 +46,8 @@ const io = new Server(server, {
       process.env.FRONTEND_URL,
       'http://localhost:3000',
       'http://127.0.0.1:3000',
-      'https://bgmifrontendcode.vercel.app'
+      'https://bgmifrontendcode.vercel.app',
+      'https://kundan-thakur61-bgmifrontendcod.vercel.app'
     ].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true
@@ -56,13 +57,20 @@ const io = new Server(server, {
 // Make io accessible to routes
 app.set('io', io);
 
+app.use((req, res, next) => {
+  console.log('Incoming Request Origin:', req.headers.origin);
+  next();
+});
+
 // CORS - MUST be before rate limiting
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'https://bgmifrontendcode.vercel.app'
+    'https://bgmifrontendcode.vercel.app',
+    'https://kundan-thakur61-bgmifrontendcod.vercel.app'
+  ].filter(Boolean),
   ].filter(Boolean),
   credentials: true
 }));
