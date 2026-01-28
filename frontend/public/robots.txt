@@ -1,0 +1,28 @@
+# Allow Google, Bing, and other search engines
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /wallet/secret
+Disallow: /profile/settings
+Crawl-delay: 1
+Request-rate: 30/60
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0.5
+
+# Bing specific
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Prevent indexing of staging/test domains
+User-agent: *
+Disallow: /test/
+Disallow: /staging/
+
+# Sitemap locations
+Sitemap: https://battlezone.com/sitemap.xml
