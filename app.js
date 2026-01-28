@@ -42,7 +42,8 @@ const io = new Server(server, {
     origin: [
       process.env.FRONTEND_URL,
       'http://localhost:3000',
-      'http://127.0.0.1:3000'
+      'http://127.0.0.1:3000',
+      'https://bgmifrontendcode.vercel.app'
     ].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true
@@ -57,7 +58,8 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
     'http://localhost:3000',
-    'http://127.0.0.1:3000'
+    'http://127.0.0.1:3000',
+    'https://bgmifrontendcode.vercel.app'
   ].filter(Boolean),
   credentials: true
 }));
