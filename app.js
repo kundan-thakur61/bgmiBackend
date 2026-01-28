@@ -46,7 +46,8 @@ const io = new Server(server, {
       process.env.FRONTEND_URL,
       'http://localhost:3000',
       'http://127.0.0.1:3000',
-      'https://bgmifrontendcode.vercel.app'
+      'https://bgmifrontendcode.vercel.app',
+      'https://kundan-thakur61-bgmifrontendcod.vercel.app'
     ].filter(Boolean),
     methods: ['GET', 'POST'],
     credentials: true
@@ -62,7 +63,8 @@ app.use(cors({
     process.env.FRONTEND_URL,
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'https://bgmifrontendcode.vercel.app'
+    'https://bgmifrontendcode.vercel.app',
+    'https://kundan-thakur61-bgmifrontendcod.vercel.app'
   ].filter(Boolean),
   credentials: true
 }));

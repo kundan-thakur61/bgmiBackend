@@ -320,7 +320,7 @@ exports.googleCallback = async (req, res, next) => {
       }
     } else if (process.env.NODE_ENV === 'production') {
       if (!frontendUrl || frontendUrl.includes('localhost')) {
-        frontendUrl = 'https://kundan-thakur61-bgmifrontendcod.vercel.app';
+        frontendUrl = 'https://bgmifrontendcode.vercel.app';
       }
     } else {
       frontendUrl = frontendUrl || 'http://localhost:3000';
