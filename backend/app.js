@@ -71,7 +71,6 @@ app.use(cors({
     'https://bgmifrontendcode.vercel.app',
     'https://kundan-thakur61-bgmifrontendcod.vercel.app'
   ].filter(Boolean),
-  ].filter(Boolean),
   credentials: true
 }));
 

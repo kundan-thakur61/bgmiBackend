@@ -1,0 +1,387 @@
+'use client';
+
+import { api, API_BASE_URL } from '@/lib/api';
+import { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
+function RegisterContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { register, sendOtp, verifyOtp, isAuthenticated } = useAuth();
+
+  const [step, setStep] = useState('phone'); // 'phone', 'otp', 'details'
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [devOtp, setDevOtp] = useState(''); // For development testing
+  const [formData, setFormData] = useState({
+    name: '',
+    referralCode: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [googleUrl, setGoogleUrl] = useState(`${API_BASE_URL}/auth/google`);
+
+  useEffect(() => {
+    // Client-side safety: ensure we don't send prod users to localhost
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1';
+
+      if (isProduction && API_BASE_URL.includes('localhost')) {
+        // Force production backend if we are on a real domain but API is localhost
+        setGoogleUrl('https://bgmibackend-5gu6.onrender.com/api/auth/google');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // If phone is passed from login page (new user)
+    const phoneParam = searchParams.get('phone');
+    if (phoneParam) {
+      setPhone(phoneParam);
+      setStep('details');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/matches');
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await sendOtp(phone);
+      // In development, backend returns OTP for testing
+      if (data.otp) {
+        setDevOtp(data.otp);
+      }
+      setStep('otp');
+    } catch (err) {
+      setError(err.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (otp.length !== 6) {
+      setError('Please enter 6-digit OTP');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await verifyOtp(phone, otp);
+      if (data.isNewUser) {
+        setStep('details');
+      } else {
+        // User already exists - redirect to matches
+        router.push('/matches');
+      }
+    } catch (err) {
+      setError(err.message || 'Invalid OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.name.length < 2 || formData.name.length > 50) {
+      setError('Name must be between 2 and 50 characters');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register({
+        name: formData.name,
+        phone: phone,
+        referralCode: formData.referralCode || undefined,
+      });
+      router.push('/matches');
+    } catch (err) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-dark-900">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <Link href="/" className="flex items-center justify-center space-x-2 mb-8">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-gaming-purple rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-2xl">B</span>
+          </div>
+          <span className="text-2xl font-bold font-display gradient-text">BattleZone</span>
+        </Link>
+
+        {/* Card */}
+        <div className="card p-8">
+          <h1 className="text-2xl font-bold text-center mb-2">
+            {step === 'phone' && 'Create Account'}
+            {step === 'otp' && 'Verify OTP'}
+            {step === 'details' && 'Complete Profile'}
+          </h1>
+          <p className="text-dark-400 text-center mb-8">
+            {step === 'phone' && 'Enter your mobile number to get started'}
+            {step === 'otp' && `Enter the OTP sent to +91 ${phone}`}
+            {step === 'details' && 'Just a few more details'}
+          </p>
+
+          {/* Development OTP Display */}
+          {devOtp && step === 'otp' && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-4 py-3 rounded-lg mb-6 text-sm">
+              <strong>Dev Mode:</strong> Your OTP is <span className="font-mono text-lg">{devOtp}</span>
+              <p className="text-xs mt-1 text-yellow-500/70">This will be removed in production</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+              {error}
+            </div>
+          )}
+
+          {step === 'phone' && (
+            <form onSubmit={handleSendOtp} className="space-y-6">
+              <div>
+                <label htmlFor="phone" className="label">Mobile Number</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-dark-600 bg-dark-700 text-dark-300">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="input rounded-l-none"
+                    placeholder="Enter 10-digit number"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || phone.length !== 10}
+                className="btn-primary w-full py-3"
+              >
+                {loading ? 'Sending OTP...' : 'Send OTP'}
+              </button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-dark-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-dark-800 text-dark-400">or continue with</span>
+                </div>
+              </div>
+
+              {/* Google Sign In */}
+              <a
+                href={googleUrl}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-dark-600 rounded-lg hover:bg-dark-700 transition-colors"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </a>
+            </form>
+          )}
+
+          {step === 'otp' && (
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div>
+                <label htmlFor="otp" className="label">Enter OTP</label>
+                <input
+                  type="text"
+                  id="otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="input text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="btn-primary w-full py-3"
+              >
+                {loading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('phone');
+                    setOtp('');
+                    setError('');
+                  }}
+                  className="text-dark-400 hover:text-white text-sm"
+                >
+                  ← Change number
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 'details' && (
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div>
+                <label htmlFor="name" className="label">Full Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input"
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone-display" className="label">Mobile Number</label>
+                <input
+                  type="text"
+                  id="phone-display"
+                  value={`+91 ${phone}`}
+                  className="input bg-dark-700 cursor-not-allowed"
+                  disabled
+                />
+              </div>
+
+              <div>
+                <label htmlFor="referralCode" className="label">
+                  Referral Code <span className="text-dark-500">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  id="referralCode"
+                  value={formData.referralCode}
+                  onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
+                  className="input"
+                  placeholder="Enter referral code"
+                />
+              </div>
+
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  className="mt-1 h-4 w-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
+                  required
+                />
+                <label htmlFor="terms" className="ml-2 text-sm text-dark-400">
+                  I agree to the{' '}
+                  <Link href="/terms-conditions" className="text-primary-400 hover:text-primary-300">
+                    Terms & Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy-policy" className="text-primary-400 hover:text-primary-300">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full py-3"
+              >
+                {loading ? 'Creating account...' : 'Create Account'}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 text-center">
+            <span className="text-dark-400 text-sm">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary-400 hover:text-primary-300 font-medium">
+                Sign in
+              </Link>
+            </span>
+          </div>
+        </div>
+
+        {/* Back to home */}
+        <div className="mt-6 text-center">
+          <Link href="/" className="text-dark-400 hover:text-white text-sm">
+            ← Back to home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-dark-900">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-gaming-purple rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">B</span>
+            </div>
+            <span className="text-2xl font-bold font-display gradient-text">BattleZone</span>
+          </div>
+          <div className="card p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+              <h1 className="text-2xl font-bold mb-2">Loading...</h1>
+              <p className="text-dark-400">Please wait while we prepare the registration form</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
+  );
+}

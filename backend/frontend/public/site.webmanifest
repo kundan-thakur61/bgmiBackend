@@ -1,0 +1,26 @@
+{
+  "name": "BattleZone - Competitive Esports Platform",
+  "short_name": "BattleZone",
+  "description": "Play PUBG Mobile and Free Fire tournaments for real money on India's fastest-growing esports platform.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "categories": ["games", "sports"],
+  "shortcuts": [
+    {
+      "name": "Browse Matches",
+      "short_name": "Matches",
+      "description": "View available competitive matches",
+      "url": "/matches"
+    },
+    {
+      "name": "View Tournaments",
+      "short_name": "Tournaments",
+      "description": "Browse esports tournaments",
+      "url": "/tournaments"
+    }
+  ]
+}
