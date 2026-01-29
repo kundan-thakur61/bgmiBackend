@@ -310,23 +310,25 @@ exports.googleCallback = async (req, res, next) => {
     const token = generateToken(user);
 
     // Redirect to frontend with token
-    let frontendUrl = process.env.FRONTEND_URL;
+    let frontendUrl = process.env.FRONTEND_URL || 'https://bgmifrontendcod.vercel.app';
 
-    // Smart detection for frontend URL as well
-    if (host && host.includes('onrender.com')) {
-      // If backend is on Render, and frontend URL is missing or localhost, default to Vercel
-      if (!frontendUrl || frontendUrl.includes('localhost')) {
-        frontendUrl = 'https://bgmifrontendcod.vercel.app';
-      }
-    } else if (process.env.NODE_ENV === 'production') {
-      if (!frontendUrl || frontendUrl.includes('localhost')) {
-        frontendUrl = 'https://bgmifrontendcod.vercel.app';
-      }
-    } else {
-      frontendUrl = frontendUrl || 'http://localhost:3000';
+    // Smart detection for frontend URL
+    if (!frontendUrl || frontendUrl.includes('localhost') || frontendUrl.includes('undefined')) {
+      frontendUrl = 'https://bgmifrontendcod.vercel.app';
     }
 
-    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+    console.log('🔐 Google Auth Success:', {
+      userId: user._id,
+      email: user.email,
+      frontendUrl,
+      envFrontendUrl: process.env.FRONTEND_URL,
+      host,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    const redirectUrl = `${frontendUrl}/auth/callback?token=${token}`;
+    console.log('📍 Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   } catch (error) {
     next(error);
   }
