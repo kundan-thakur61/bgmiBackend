@@ -1,0 +1,26 @@
+{
+  "seo_dependencies": {
+    "backend": {
+      "helmet": "^7.1.0",
+      "compression": "^1.7.4",
+      "express-rate-limit": "^7.1.5"
+    },
+    "frontend": {
+      "web-vitals": "^3.5.0"
+    }
+  },
+  "installation_commands": {
+    "backend": "cd backend && npm install helmet compression express-rate-limit",
+    "frontend": "cd frontend && npm install web-vitals"
+  },
+  "scripts_to_add": {
+    "backend": {
+      "test:seo": "node scripts/test-seo.js",
+      "generate:sitemap": "node scripts/generate-sitemap.js"
+    },
+    "frontend": {
+      "analyze": "ANALYZE=true next build",
+      "lighthouse": "lighthouse http://localhost:3000 --view"
+    }
+  }
+}

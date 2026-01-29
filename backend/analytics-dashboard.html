@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Performance Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .dashboard { max-width: 1200px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { margin-bottom: 20px; }
+    h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
+    .metric { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .metric:last-child { border-bottom: none; }
+    .value { font-weight: bold; color: #0066cc; }
+    .good { color: #00aa00; }
+    .poor { color: #cc0000; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>Performance Monitor Dashboard</h1>
+    
+    <div class="grid">
+      <div class="card">
+        <h2>Core Web Vitals</h2>
+        <div class="metric">
+          <span>LCP (Largest Contentful Paint)</span>
+          <span class="value" id="lcp">--</span>
+        </div>
+        <div class="metric">
+          <span>FID (First Input Delay)</span>
+          <span class="value" id="fid">--</span>
+        </div>
+        <div class="metric">
+          <span>CLS (Cumulative Layout Shift)</span>
+          <span class="value" id="cls">--</span>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Keyword Rankings</h2>
+        <div id="keywords">Loading...</div>
+      </div>
+      
+      <div class="card">
+        <h2>User Behavior</h2>
+        <div class="metric">
+          <span>Avg Session Duration</span>
+          <span class="value" id="session">--</span>
+        </div>
+        <div class="metric">
+          <span>Avg Scroll Depth</span>
+          <span class="value" id="scroll">--</span>
+        </div>
+        <div class="metric">
+          <span>Total Clicks</span>
+          <span class="value" id="clicks">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const fetchMetrics = async () => {
+      const data = await fetch('/api/analytics/summary').then(r => r.json());
+      
+      // Core Web Vitals
+      document.getElementById('lcp').textContent = `${data.lcp}ms`;
+      document.getElementById('lcp').className = data.lcp < 2500 ? 'value good' : 'value poor';
+      
+      document.getElementById('fid').textContent = `${data.fid}ms`;
+      document.getElementById('fid').className = data.fid < 100 ? 'value good' : 'value poor';
+      
+      document.getElementById('cls').textContent = data.cls.toFixed(3);
+      document.getElementById('cls').className = data.cls < 0.1 ? 'value good' : 'value poor';
+      
+      // Keywords
+      const keywordsHtml = Object.entries(data.keywords).map(([kw, pos]) => 
+        `<div class="metric"><span>${kw}</span><span class="value">#${pos}</span></div>`
+      ).join('');
+      document.getElementById('keywords').innerHTML = keywordsHtml;
+      
+      // User Behavior
+      document.getElementById('session').textContent = `${Math.round(data.avgSession / 1000)}s`;
+      document.getElementById('scroll').textContent = `${Math.round(data.avgScroll)}%`;
+      document.getElementById('clicks').textContent = data.totalClicks;
+    };
+    
+    fetchMetrics();
+    setInterval(fetchMetrics, 30000);
+  </script>
+</body>
+</html>

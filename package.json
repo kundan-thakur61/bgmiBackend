@@ -1,12 +1,12 @@
 {
-  "name": "battlezone-backend",
+  "name": "bgmi-backend",
   "version": "1.0.0",
-  "description": "BattleZone Esports Platform Backend",
-  "main": "app.js",
+  "description": "BGMI Backend API",
+  "main": "backend/app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "seed": "node seeds/index.js",
+    "start": "node backend/app.js",
+    "dev": "nodemon backend/app.js",
+    "seed": "node backend/seeds/index.js",
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage --forceExit"
