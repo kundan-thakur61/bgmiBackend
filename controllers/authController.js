@@ -316,11 +316,11 @@ exports.googleCallback = async (req, res, next) => {
     if (host && host.includes('onrender.com')) {
       // If backend is on Render, and frontend URL is missing or localhost, default to Vercel
       if (!frontendUrl || frontendUrl.includes('localhost')) {
-        frontendUrl = 'https://kundan-thakur61-bgmifrontendcod.vercel.app';
+        frontendUrl = 'https://bgmifrontendcod.vercel.app';
       }
     } else if (process.env.NODE_ENV === 'production') {
       if (!frontendUrl || frontendUrl.includes('localhost')) {
-        frontendUrl = 'https://bgmifrontendcode.vercel.app';
+        frontendUrl = 'https://bgmifrontendcod.vercel.app';
       }
     } else {
       frontendUrl = frontendUrl || 'http://localhost:3000';
