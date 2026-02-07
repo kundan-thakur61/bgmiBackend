@@ -224,8 +224,8 @@ const api = {
     return response.data;
   },
 
-  joinMatch: async (matchId, inGameId, inGameName) => {
-    const response = await axiosInstance.post(`/matches/${matchId}/join`, { inGameId, inGameName });
+  joinMatch: async (matchId, inGameId, inGameName, slotNumber) => {
+    const response = await axiosInstance.post(`/matches/${matchId}/join`, { inGameId, inGameName, slotNumber });
     clearCache();
     return response.data;
   },

@@ -1,26 +1,65 @@
+const logger = require('../utils/logger');
+
+// Track API metrics in-memory (for /health endpoint)
+const metrics = {
+  totalRequests: 0,
+  totalErrors: 0,
+  slowRequests: 0,
+  avgResponseTime: 0,
+  _responseTimes: []
+};
+
+const SLOW_REQUEST_THRESHOLD_MS = parseInt(process.env.SLOW_REQUEST_THRESHOLD_MS, 10) || 1000;
+const METRICS_WINDOW_SIZE = 1000; // Keep last 1000 response times
+
 // Performance monitoring middleware
 const performanceMonitor = (req, res, next) => {
-  const start = Date.now();
+  const start = process.hrtime.bigint(); // Nanosecond precision
+
+  metrics.totalRequests++;
 
   // Store the original end function
   const originalEnd = res.end;
 
   // Override res.end to capture timing
   res.end = function (...args) {
-    const duration = Date.now() - start;
+    const durationNs = Number(process.hrtime.bigint() - start);
+    const durationMs = Math.round(durationNs / 1e6);
 
-    // Safely try to set header (with multiple checks to prevent ERR_HTTP_HEADERS_SENT)
+    // Safely try to set header
     try {
       if (!res.headersSent && !res.writableEnded && !res.finished) {
-        res.setHeader('X-Response-Time', `${duration}ms`);
+        res.setHeader('X-Response-Time', `${durationMs}ms`);
       }
     } catch (err) {
-      // Silently ignore header setting errors - response timing is not critical
+      // Silently ignore header setting errors
     }
 
-    // Log slow requests (> 1000ms)
-    if (duration > 1000) {
-      console.warn(`⚠️ Slow request: ${req.method} ${req.path} - ${duration}ms`);
+    // Track metrics
+    if (res.statusCode >= 400) {
+      metrics.totalErrors++;
+    }
+
+    // Rolling window of response times
+    metrics._responseTimes.push(durationMs);
+    if (metrics._responseTimes.length > METRICS_WINDOW_SIZE) {
+      metrics._responseTimes.shift();
+    }
+    metrics.avgResponseTime = Math.round(
+      metrics._responseTimes.reduce((a, b) => a + b, 0) / metrics._responseTimes.length
+    );
+
+    // Log slow requests
+    if (durationMs > SLOW_REQUEST_THRESHOLD_MS) {
+      metrics.slowRequests++;
+      logger.warn(`⚠️ Slow request: ${req.method} ${req.path} - ${durationMs}ms`, {
+        requestId: req.id,
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        durationMs,
+        userId: req.userId?.toString()
+      });
     }
 
     // Call original end
@@ -48,4 +87,4 @@ const preloadHeaders = (req, res, next) => {
   next();
 };
 
-module.exports = { performanceMonitor, cacheControl, preloadHeaders };
+module.exports = { performanceMonitor, cacheControl, preloadHeaders, metrics };

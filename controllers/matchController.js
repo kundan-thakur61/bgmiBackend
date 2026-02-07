@@ -146,7 +146,7 @@ exports.getMatch = async (req, res, next) => {
 // Join match (Accept Challenge)
 exports.joinMatch = async (req, res, next) => {
   try {
-    const { inGameId, inGameName } = req.body;
+    const { inGameId, inGameName, slotNumber } = req.body;
 
     const match = await Match.findById(req.params.id).select('+roomId +roomPassword');
 
@@ -172,6 +172,13 @@ exports.joinMatch = async (req, res, next) => {
 
     // Check user level requirement
     const user = await User.findById(req.userId);
+
+    // Prevent admins from joining challenge matches  
+    const adminRoles = ['admin', 'super_admin', 'match_manager'];
+    if (adminRoles.includes(user.role)) {
+      throw new ForbiddenError('Administrators cannot join challenge matches. Please use the admin match management panel.');
+    }
+
     const levelOrder = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
 
     if (levelOrder.indexOf(user.level) < levelOrder.indexOf(match.minLevelRequired)) {
@@ -200,7 +207,7 @@ exports.joinMatch = async (req, res, next) => {
     await user.save();
 
     // Add user to match
-    const slotNumber = match.addUser(req.userId, inGameName, inGameId);
+    const assignedSlot = match.addUser(req.userId, inGameName, inGameId, slotNumber ? parseInt(slotNumber) : null);
 
     // Check if match is now full - reveal room credentials
     const isMatchFull = match.filledSlots >= match.maxSlots;
@@ -375,7 +382,7 @@ exports.getRoomCredentials = async (req, res, next) => {
       const isMatchFull = match.filledSlots >= match.maxSlots;
       const currentTime = new Date();
       const shouldRevealRoom = isMatchFull || (match.roomIdRevealTime && currentTime >= match.roomIdRevealTime);
-      
+
       if (shouldRevealRoom) {
         match.roomCredentialsVisible = true;
         match.status = 'room_revealed';

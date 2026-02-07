@@ -340,6 +340,78 @@ exports.getReferralInfo = async (req, res, next) => {
   }
 };
 
+// Get referral statistics (Enhanced)
+exports.getReferralStats = async (req, res, next) => {
+  try {
+    const { ReferralStats } = require('../models');
+
+    let stats = await ReferralStats.findOne({ user: req.userId });
+
+    if (!stats) {
+      // Create initial stats
+      stats = await ReferralStats.create({ user: req.userId });
+    }
+
+    // Get user's referral code
+    const user = await User.findById(req.userId).select('referralCode');
+
+    res.json({
+      success: true,
+      data: {
+        referralCode: user.referralCode,
+        stats: stats,
+        shareable: {
+          link: `${process.env.FRONTEND_URL}/register?ref=${user.referralCode}`,
+          message: `Join BattleZone using my referral code: ${user.referralCode} and get special bonuses!`
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get referral leaderboard
+exports.getReferralLeaderboard = async (req, res, next) => {
+  try {
+    const { ReferralStats } = require('../models');
+    const { limit = 50 } = req.query;
+
+    const leaderboard = await ReferralStats.find()
+      .sort({ totalReferrals: -1, totalEarnings: -1 })
+      .limit(parseInt(limit))
+      .populate('user', 'username avatar');
+
+    // Find current user's rank
+    const userStats = await ReferralStats.findOne({ user: req.userId });
+    let userRank = null;
+
+    if (userStats) {
+      const rank = await ReferralStats.countDocuments({
+        $or: [
+          { totalReferrals: { $gt: userStats.totalReferrals } },
+          {
+            totalReferrals: userStats.totalReferrals,
+            totalEarnings: { $gt: userStats.totalEarnings }
+          }
+        ]
+      });
+      userRank = rank + 1;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        leaderboard,
+        currentUserRank: userRank,
+        currentUserStats: userStats
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get notification preferences
 exports.getNotificationPreferences = async (req, res, next) => {
   try {

@@ -1,7 +1,12 @@
 const getBaseUrl = () => {
-  // 1. Check for manually set site URL
+  // In development mode, always prioritize localhost to prevent Vercel URL redirects
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  }
+
+  // 1. Check for manually set site URL (production)
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')) {
+    if (process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')) {
       // Ignore localhost in production to prevent redirect loops/issues
       // fallback to other methods
     } else {
@@ -19,10 +24,8 @@ const getBaseUrl = () => {
     return `https://${process.env.VERCEL_URL}`;
   }
 
-  // 4. Default fallbacks
-  return process.env.NODE_ENV === 'production'
-    ? 'https://battlezone.com'
-    : 'http://localhost:3000';
+  // 4. Default fallback for production
+  return 'https://battlezone.com';
 };
 
 export const SITE_CONFIG = {
@@ -140,7 +143,7 @@ export const pageMetadata = {
     'Live BGMI & PUBG Mobile Matches',
     'Browse 1000+ daily matches. Entry fees from ₹10. Fair play verified. Win real cash & withdraw in 24 hours. Find your next match →',
     ['BGMI matches', 'PUBG Mobile matches live', 'esports matches', 'real money matches', 'competitive gaming'],
-    'https://battlezone.com/matches',
+    `${SITE_CONFIG.baseUrl}/matches`,
     '/og-matches.jpg'
   ),
 
@@ -148,7 +151,7 @@ export const pageMetadata = {
     'BGMI & Free Fire Tournaments India | ₹50,000+ Daily Prizes',
     'Weekly tournaments with massive prize pools. Solo, Duo & Squad formats. Register free, compete against India\'s best players. See today\'s tournaments →',
     ['BGMI tournaments', 'Free Fire tournaments', 'esports tournaments India', 'gaming tournaments', 'squad tournaments'],
-    'https://battlezone.com/tournaments',
+    `${SITE_CONFIG.baseUrl}/tournaments`,
     '/og-tournaments.jpg'
   ),
 
@@ -156,41 +159,41 @@ export const pageMetadata = {
     'How to Join BGMI Tournaments & Win Real Money',
     'Learn how BattleZone works. Simple steps: Sign up, add money, join matches, play, win prizes. Complete guide with screenshots & tips.',
     ['how to play BGMI tournaments', 'tournament guide', 'esports getting started', 'BattleZone tutorial'],
-    'https://battlezone.com/how-it-works'
+    `${SITE_CONFIG.baseUrl}/how-it-works`
   ),
 
   wallet: createMetadata(
     'Wallet - Add Money & Withdraw Winnings',
     'Secure wallet for tournament payments. Add via UPI, Paytm, bank transfer. Withdraw winnings in 24-48 hours. Track all transactions.',
     ['gaming wallet', 'esports wallet', 'withdraw gaming winnings', 'add money for gaming'],
-    'https://battlezone.com/wallet'
+    `${SITE_CONFIG.baseUrl}/wallet`
   ),
 
   blog: createMetadata(
     'Gaming Blog - BGMI Tips, Strategies & Esports News',
     'Expert BGMI & PUBG Mobile tips, tournament strategies, pro player guides, and latest esports news. Level up your game!',
     ['BGMI tips', 'PUBG Mobile guide', 'esports news India', 'gaming strategies', 'Free Fire tips'],
-    'https://battlezone.com/blog'
+    `${SITE_CONFIG.baseUrl}/blog`
   ),
 
   fairPlay: createMetadata(
     'Fair Play Policy - Anti-Cheat & Fraud Prevention',
     'Learn about BattleZone\'s advanced anti-cheat systems. Screenshot verification, EXIF analysis, and manual review ensure fair tournaments.',
     ['anti-cheat gaming', 'fair play esports', 'fraud prevention gaming', 'cheat detection'],
-    'https://battlezone.com/fair-play'
+    `${SITE_CONFIG.baseUrl}/fair-play`
   ),
 
   rules: createMetadata(
     'Tournament Rules & Guidelines',
     'Official BattleZone tournament rules. Match formats, scoring system, prize distribution, and player conduct guidelines.',
     ['tournament rules', 'esports rules', 'gaming competition rules', 'BGMI tournament rules'],
-    'https://battlezone.com/rules'
+    `${SITE_CONFIG.baseUrl}/rules`
   ),
 
   kyc: createMetadata(
     'KYC Verification - Secure Your Account',
     'Complete KYC verification to enable withdrawals. Simple process using Aadhaar or PAN card. Secure and confidential.',
     ['KYC gaming', 'identity verification gaming', 'secure gaming account'],
-    'https://battlezone.com/kyc'
+    `${SITE_CONFIG.baseUrl}/kyc`
   ),
 };

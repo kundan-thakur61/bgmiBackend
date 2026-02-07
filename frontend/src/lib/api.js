@@ -224,8 +224,8 @@ const api = {
     return response.data;
   },
 
-  joinMatch: async (matchId, inGameId, inGameName) => {
-    const response = await axiosInstance.post(`/matches/${matchId}/join`, { inGameId, inGameName });
+  joinMatch: async (matchId, inGameId, inGameName, slotNumber) => {
+    const response = await axiosInstance.post(`/matches/${matchId}/join`, { inGameId, inGameName, slotNumber });
     clearCache();
     return response.data;
   },
@@ -426,6 +426,159 @@ const api = {
     return response.data;
   },
 
+  // ==================== ENHANCED ADMIN DASHBOARD APIs ====================
+
+  // Enhanced Dashboard
+  getDashboardEnhanced: async () => {
+    const response = await axiosInstance.get('/admin/dashboard/enhanced');
+    return response.data;
+  },
+
+  // System Health
+  getSystemHealth: async () => {
+    const response = await axiosInstance.get('/admin/system/health');
+    return response.data;
+  },
+
+  // Online Users
+  getOnlineUsers: async () => {
+    const response = await axiosInstance.get('/admin/system/online-users');
+    return response.data;
+  },
+
+  // Platform Settings
+  getPlatformSettings: async () => {
+    const response = await axiosInstance.get('/admin/system/settings');
+    return response.data;
+  },
+
+  // Transaction History (admin)
+  getAdminTransactions: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/transactions?${query}`);
+    return response.data;
+  },
+
+  // Withdrawal Queue
+  getWithdrawalQueue: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/withdrawals/queue?${query}`);
+    return response.data;
+  },
+
+  // KYC Queue
+  getKycQueue: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/kyc/queue?${query}`);
+    return response.data;
+  },
+
+  // Ticket Overview
+  getTicketOverview: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/tickets/overview?${query}`);
+    return response.data;
+  },
+
+  // Match Overview
+  getMatchOverview: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/matches/overview?${query}`);
+    return response.data;
+  },
+
+  // Tournament Overview
+  getTournamentOverview: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/tournaments/overview?${query}`);
+    return response.data;
+  },
+
+  // Dispute Overview
+  getDisputeOverview: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/disputes/overview?${query}`);
+    return response.data;
+  },
+
+  // Admin Dispute Actions
+  assignDisputeAdmin: async (disputeId, adminId) => {
+    const response = await axiosInstance.post(`/admin/disputes/${disputeId}/assign`, { adminId });
+    return response.data;
+  },
+
+  resolveDisputeAdmin: async (disputeId, data) => {
+    const response = await axiosInstance.post(`/admin/disputes/${disputeId}/resolve`, data);
+    return response.data;
+  },
+
+  addDisputeNoteAdmin: async (disputeId, note) => {
+    const response = await axiosInstance.post(`/admin/disputes/${disputeId}/note`, { note });
+    return response.data;
+  },
+
+  // User Growth Analytics
+  getUserGrowthAnalytics: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/analytics/users?${query}`);
+    return response.data;
+  },
+
+  // Revenue Analytics
+  getRevenueAnalytics: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/analytics/revenue?${query}`);
+    return response.data;
+  },
+
+  // Notification Stats
+  getNotificationStats: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/analytics/notifications?${query}`);
+    return response.data;
+  },
+
+  // Force Logout
+  forceLogoutUser: async (userId) => {
+    const response = await axiosInstance.post(`/admin/users/${userId}/force-logout`);
+    return response.data;
+  },
+
+  // Bulk User Action
+  bulkUserAction: async (userIds, action, value, reason) => {
+    const response = await axiosInstance.post('/admin/users/bulk-action', { userIds, action, value, reason });
+    return response.data;
+  },
+
+  // Admin Staff
+  getAdminStaff: async () => {
+    const response = await axiosInstance.get('/admin/staff');
+    return response.data;
+  },
+
+  // Admin Activity Logs
+  getAdminLogs: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/admin/logs?${query}`);
+    return response.data;
+  },
+
+  // Export Data
+  exportAdminData: async (type, params = {}) => {
+    const query = new URLSearchParams({ type, ...params }).toString();
+    const response = await axiosInstance.get(`/admin/export?${query}`, { responseType: 'blob' });
+    // Trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${type}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    return { success: true };
+  },
+
   // Wallet
   getTransactions: async () => {
     const response = await axiosInstance.get('/wallet/transactions');
@@ -593,9 +746,75 @@ const api = {
     return response.data;
   },
 
+
   // User search (for team invites)
   searchUsers: async (query) => {
     const response = await axiosInstance.get(`/users/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  },
+
+  // ==================== ADMIN LEADERBOARD MANAGEMENT ====================
+
+  // Update user stats manually
+  updateLeaderboardUserStats: async (userId, stats) => {
+    const response = await axiosInstance.put(`/leaderboard/admin/user/${userId}/stats`, stats);
+    clearCache();
+    return response.data;
+  },
+
+  // Add user to leaderboard with custom stats
+  addUserToLeaderboard: async (userId, stats) => {
+    const response = await axiosInstance.post(`/leaderboard/admin/user/${userId}/add`, stats);
+    clearCache();
+    return response.data;
+  },
+
+  // Remove user from leaderboard
+  removeUserFromLeaderboard: async (userId) => {
+    const response = await axiosInstance.delete(`/leaderboard/admin/user/${userId}/remove`);
+    clearCache();
+    return response.data;
+  },
+
+  // Reset weekly leaderboard
+  resetWeeklyLeaderboard: async () => {
+    const response = await axiosInstance.post('/leaderboard/admin/reset/weekly');
+    clearCache();
+    return response.data;
+  },
+
+  // Reset monthly leaderboard
+  resetMonthlyLeaderboard: async () => {
+    const response = await axiosInstance.post('/leaderboard/admin/reset/monthly');
+    clearCache();
+    return response.data;
+  },
+
+  // Archive leaderboard
+  archiveLeaderboard: async (type, notes) => {
+    const response = await axiosInstance.post('/leaderboard/admin/archive', { type, notes });
+    return response.data;
+  },
+
+  // Get archived leaderboards
+  getArchivedLeaderboards: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await axiosInstance.get(`/leaderboard/admin/archives?${query}`);
+    return response.data;
+  },
+
+  // Get single archived leaderboard
+  getArchivedLeaderboard: async (archiveId) => {
+    const response = await axiosInstance.get(`/leaderboard/admin/archives/${archiveId}`);
+    return response.data;
+  },
+
+  // Clear all leaderboard data
+  clearAllLeaderboards: async (confirmation) => {
+    const response = await axiosInstance.delete('/leaderboard/admin/clear-all', {
+      data: { confirmation }
+    });
+    clearCache();
     return response.data;
   },
 };

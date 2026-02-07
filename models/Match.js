@@ -259,12 +259,32 @@ matchSchema.methods.getUserSlot = function (userId) {
 };
 
 // Add user to match
-matchSchema.methods.addUser = function (userId, inGameName, inGameId) {
+matchSchema.methods.addUser = function (userId, inGameName, inGameId, chosenSlot) {
   if (this.hasUserJoined(userId)) {
     throw new Error('User has already joined this match');
   }
 
-  const slotNumber = this.filledSlots + 1;
+  let slotNumber;
+  if (chosenSlot) {
+    // Validate chosen slot is within range
+    if (chosenSlot < 1 || chosenSlot > this.maxSlots) {
+      throw new Error(`Slot number must be between 1 and ${this.maxSlots}`);
+    }
+    // Check if slot is already taken
+    const slotTaken = this.joinedUsers.some(ju => ju.slotNumber === chosenSlot);
+    if (slotTaken) {
+      throw new Error(`Slot ${chosenSlot} is already taken`);
+    }
+    slotNumber = chosenSlot;
+  } else {
+    // Auto-assign next available slot
+    const takenSlots = new Set(this.joinedUsers.map(ju => ju.slotNumber));
+    slotNumber = 1;
+    while (takenSlots.has(slotNumber)) {
+      slotNumber++;
+    }
+  }
+
   this.joinedUsers.push({
     user: userId,
     slotNumber,
@@ -272,7 +292,7 @@ matchSchema.methods.addUser = function (userId, inGameName, inGameId) {
     inGameId,
     entryPaid: true
   });
-  this.filledSlots = slotNumber;
+  this.filledSlots += 1;
 
   return slotNumber;
 };

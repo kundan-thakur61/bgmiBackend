@@ -31,7 +31,15 @@ const adminLogSchema = new mongoose.Schema({
       'ticket_resolve',
       'announcement_create',
       'announcement_update',
+      'announcement_delete',
+      'broadcast_notification',
+      'dispute_assign',
+      'dispute_resolve',
       'settings_update',
+      'data_export',
+      'user_force_logout',
+      'match_force_complete',
+      'system_maintenance',
       'login',
       'other'
     ],
@@ -39,7 +47,7 @@ const adminLogSchema = new mongoose.Schema({
   },
   targetType: {
     type: String,
-    enum: ['user', 'match', 'tournament', 'withdrawal', 'kyc', 'ticket', 'announcement', 'settings', 'other']
+    enum: ['user', 'match', 'tournament', 'withdrawal', 'kyc', 'ticket', 'announcement', 'dispute', 'settings', 'system', 'other']
   },
   targetId: mongoose.Schema.Types.ObjectId,
   description: {

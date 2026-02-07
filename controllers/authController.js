@@ -310,11 +310,13 @@ exports.googleCallback = async (req, res, next) => {
     const token = generateToken(user);
 
     // Redirect to frontend with token
-    let frontendUrl = process.env.FRONTEND_URL || 'https://bgmifrontendcod.vercel.app';
+    // Use FRONTEND_URL from environment, with production fallback only if missing
+    let frontendUrl = process.env.FRONTEND_URL;
 
-    // Smart detection for frontend URL
-    if (!frontendUrl || frontendUrl.includes('localhost') || frontendUrl.includes('undefined')) {
+    // Only fallback to production if FRONTEND_URL is not set
+    if (!frontendUrl) {
       frontendUrl = 'https://bgmifrontendcod.vercel.app';
+      console.warn('⚠️ FRONTEND_URL not set, using production URL as fallback');
     }
 
     console.log('🔐 Google Auth Success:', {
