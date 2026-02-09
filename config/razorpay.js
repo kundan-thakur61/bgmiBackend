@@ -17,17 +17,19 @@ const getRazorpayInstance = () => {
 // Create order
 const createOrder = async (amount, currency = 'INR', receipt = null) => {
   try {
+    const receiptStr = (receipt || `order_${Date.now()}`).substring(0, 40);
     const options = {
       amount: amount * 100, // Razorpay expects amount in paise
       currency,
-      receipt: receipt || `order_${Date.now()}`,
+      receipt: receiptStr,
       payment_capture: 1 // Auto capture
     };
     
     const order = await getRazorpayInstance().orders.create(options);
     return order;
   } catch (error) {
-    throw new Error(`Order creation failed: ${error.message}`);
+    const msg = error?.error?.description || error?.message || 'Unknown error';
+    throw new Error(`Order creation failed: ${msg}`);
   }
 };
 

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const withdrawalController = require('../controllers/withdrawalController');
-const { auth, kycVerified, financeAccess } = require('../middleware/auth');
+const { auth, financeAccess } = require('../middleware/auth');
 const { validationChains } = require('../middleware/validators');
 
 // User routes
 router.get('/', auth, withdrawalController.getWithdrawals);
-router.post('/', auth, kycVerified, validationChains.createWithdrawal, withdrawalController.createWithdrawal);
+router.post('/', auth, validationChains.createWithdrawal, withdrawalController.createWithdrawal);
 router.delete('/:id', auth, withdrawalController.cancelWithdrawal);
 router.get('/check-eligibility', auth, withdrawalController.checkEligibility);
 

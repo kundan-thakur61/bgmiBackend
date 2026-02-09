@@ -125,10 +125,6 @@ withdrawalSchema.statics.canUserWithdraw = async function(userId) {
     return { allowed: false, reason: 'Account is banned' };
   }
   
-  if (!user.isKycVerified) {
-    return { allowed: false, reason: 'KYC verification required for withdrawals' };
-  }
-  
   // Check for pending withdrawals
   const pendingWithdrawal = await this.findOne({
     user: userId,

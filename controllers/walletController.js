@@ -78,11 +78,11 @@ exports.createDeposit = async (req, res, next) => {
       throw new BadRequestError('Maximum deposit amount is ₹50,000');
     }
     
-    // Create Razorpay order
+    // Create Razorpay order (receipt max 40 chars for Razorpay)
     const order = await createOrder(
       amount, 
       'INR', 
-      `bz_deposit_${req.userId}_${Date.now()}`
+      `bz_${req.userId}_${Date.now()}`
     );
     
     // Create pending transaction
