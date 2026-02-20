@@ -2,6 +2,10 @@ const ChatMessage = require('../models/ChatMessage');
 const Conversation = require('../models/Conversation');
 const Match = require('../models/Match');
 const Tournament = require('../models/Tournament');
+const User = require('../models/User');
+
+// Maximum message length to prevent abuse
+const MAX_MESSAGE_LENGTH = 2000;
 
 // ==================== ROOM MESSAGES (Match/Tournament) ====================
 
@@ -15,6 +19,11 @@ const createMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message content is required' });
     }
 
+    // SECURITY: Validate message length
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ success: false, message: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
+    }
+
     // Validate at least one context is provided
     if (!matchId && !tournamentId && !conversationId) {
       return res.status(400).json({
@@ -23,8 +32,25 @@ const createMessage = async (req, res) => {
       });
     }
 
+    // SECURITY: Validate IDs are valid MongoDB ObjectIds
+    const mongoose = require('mongoose');
+    const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+    if (matchId && !isValidId(matchId)) {
+      return res.status(400).json({ success: false, message: 'Invalid match ID' });
+    }
+    if (tournamentId && !isValidId(tournamentId)) {
+      return res.status(400).json({ success: false, message: 'Invalid tournament ID' });
+    }
+    if (conversationId && !isValidId(conversationId)) {
+      return res.status(400).json({ success: false, message: 'Invalid conversation ID' });
+    }
+
     // Validate replyTo message exists if provided
     if (replyTo) {
+      if (!isValidId(replyTo)) {
+        return res.status(400).json({ success: false, message: 'Invalid reply message ID' });
+      }
       const replyMessage = await ChatMessage.findById(replyTo);
       if (!replyMessage) {
         return res.status(400).json({ success: false, message: 'Reply message not found' });
@@ -161,14 +187,30 @@ const getConversations = async (req, res) => {
 
     // Add unread count for current user and format response
     const formattedConversations = conversations.map(conv => {
-      const convObj = conv.toObject();
-      convObj.unreadCount = conv.getUnreadCount(userId);
-      convObj.otherParticipant = conv.getOtherParticipant(userId);
-      return convObj;
-    });
+      try {
+        const convObj = conv.toObject();
+        // Safely get unread count with null check
+        convObj.unreadCount = conv.unreadCount && Array.isArray(conv.unreadCount)
+          ? (conv.unreadCount.find(u => u.user && u.user.toString() === userId.toString())?.count || 0)
+          : 0;
+        // Safely get other participant with null check
+        convObj.otherParticipant = conv.participants && Array.isArray(conv.participants)
+          ? conv.participants.find(p => {
+            if (!p) return false;
+            const participantId = p._id ? p._id.toString() : p.toString();
+            return participantId !== userId.toString();
+          })
+          : null;
+        return convObj;
+      } catch (err) {
+        console.error('Error formatting conversation:', err);
+        return null;
+      }
+    }).filter(Boolean); // Remove any null entries from formatting errors
 
     res.status(200).json({ success: true, data: formattedConversations });
   } catch (error) {
+    console.error('Get conversations error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch conversations', error: error.message });
   }
 };
@@ -187,9 +229,30 @@ const startConversation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot start conversation with yourself' });
     }
 
+    // RESTRICTION: At least one participant must be an admin or super_admin
+    const adminRoles = ['admin', 'super_admin'];
+    const [currentUserDoc, otherUserDoc] = await Promise.all([
+      User.findById(currentUserId).select('role'),
+      User.findById(otherUserId).select('role')
+    ]);
+
+    if (!otherUserDoc) {
+      return res.status(404).json({ success: false, message: 'Target user not found' });
+    }
+
+    const isCurrentAdmin = adminRoles.includes(currentUserDoc?.role);
+    const isOtherAdmin = adminRoles.includes(otherUserDoc?.role);
+
+    if (!isCurrentAdmin && !isOtherAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Direct messaging is only allowed between users and administrators. You cannot message other regular users.'
+      });
+    }
+
     const conversation = await Conversation.findOrCreateDM(currentUserId, otherUserId);
 
-    await conversation.populate('participants', 'name avatar');
+    await conversation.populate('participants', 'name avatar role');
 
     const convObj = conversation.toObject();
     convObj.otherParticipant = conversation.getOtherParticipant(currentUserId);
@@ -198,6 +261,21 @@ const startConversation = async (req, res) => {
     res.status(200).json({ success: true, data: convObj });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to start conversation', error: error.message });
+  }
+};
+
+// Get list of available admins (for users to contact)
+const getAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({
+      role: { $in: ['admin', 'super_admin'] },
+      isActive: true,
+      isBanned: false
+    }).select('name avatar role').lean();
+
+    res.status(200).json({ success: true, data: admins });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch admins', error: error.message });
   }
 };
 
@@ -501,6 +579,7 @@ module.exports = {
   startConversation,
   getConversationMessages,
   markConversationAsRead,
+  getAdmins,
   // Message actions
   addReaction,
   removeReaction,

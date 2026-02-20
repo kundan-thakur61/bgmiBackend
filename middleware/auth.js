@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const logger = require('../utils/logger');
 
 // Verify JWT token
 const auth = async (req, res, next) => {
@@ -15,7 +16,24 @@ const auth = async (req, res, next) => {
     
     const token = authHeader.split(' ')[1];
     
+    // SECURITY: Use environment variable with fallback check
+    if (!process.env.JWT_SECRET) {
+      logger.error('JWT_SECRET is not configured');
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error'
+      });
+    }
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // SECURITY: Validate decoded token has required fields
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.'
+      });
+    }
     
     const user = await User.findById(decoded.id);
     

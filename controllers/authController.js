@@ -26,13 +26,17 @@ exports.sendOtp = async (req, res, next) => {
     // In development, return OTP (remove in production)
     const isDev = process.env.NODE_ENV === 'development';
 
-    console.log(`📱 OTP for ${phone}: ${otp}`); // Dev only
+    // SECURITY: Never log OTP in production
+    if (isDev) {
+      console.log(`📱 OTP for ${phone}: ${otp}`);
+    }
 
     res.json({
       success: true,
       message: smsResult.success ? 'OTP sent successfully' : 'OTP generated (SMS delivery failed)',
       smsSent: smsResult.success,
-      ...(isDev && { otp }) // Only in development
+      // SECURITY: Only return OTP in development mode, never in production
+      ...(isDev && { otp })
     });
   } catch (error) {
     next(error);

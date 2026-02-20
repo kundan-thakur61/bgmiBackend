@@ -48,6 +48,9 @@ const socialRoutes = require('./routes/social');
 const gamificationRoutes = require('./routes/gamification');
 const securityRoutes = require('./routes/security');
 const roomRoutes = require('./routes/room');
+const playerAnalyticsRoutes = require('./routes/playerAnalytics');
+const savedPaymentMethodRoutes = require('./routes/savedPaymentMethod');
+const popularityRoutes = require('./routes/popularity');
 
 // ─── Validate environment before anything else ──────────────────────────
 validateStartup({ strict: process.env.NODE_ENV === 'production' });
@@ -229,6 +232,9 @@ app.use('/api/social', socialRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/player-analytics', playerAnalyticsRoutes);
+app.use('/api/saved-payment-methods', savedPaymentMethodRoutes);
+app.use('/api/popularity', popularityRoutes);
 
 // ─── 12. Socket.IO connection handling ──────────────────────────────────
 io.use(socketAuth);
@@ -279,6 +285,20 @@ io.on('connection', (socket) => {
     if (typeof roomId !== 'string') return;
     socket.leave(`room_${roomId}`);
     logger.debug(`User ${socket.userId} left room ${roomId}`);
+  });
+
+  // Join DM conversation room
+  socket.on('join_dm', (conversationId) => {
+    if (typeof conversationId !== 'string' || !conversationId.match(/^[a-f0-9]{24}$/)) return;
+    socket.join(`dm_${conversationId}`);
+    logger.debug(`User ${socket.userId} joined DM conversation ${conversationId}`);
+  });
+
+  // Leave DM conversation room
+  socket.on('leave_dm', (conversationId) => {
+    if (typeof conversationId !== 'string') return;
+    socket.leave(`dm_${conversationId}`);
+    logger.debug(`User ${socket.userId} left DM conversation ${conversationId}`);
   });
 
   // Error handling for socket events

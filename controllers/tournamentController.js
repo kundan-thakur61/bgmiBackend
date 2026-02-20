@@ -294,6 +294,27 @@ exports.createTournament = async (req, res, next) => {
       createdBy: req.userId,
       status: req.body.status || 'draft'
     };
+
+    // Validate prize pool is a positive number
+    if (tournamentData.prizePool !== undefined) {
+      if (typeof tournamentData.prizePool !== 'number' || isNaN(tournamentData.prizePool)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Prize pool must be a valid number'
+        });
+      }
+      if (tournamentData.prizePool < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Prize pool must be a positive value'
+        });
+      }
+    }
+
+    // Set default currency if not provided
+    if (!tournamentData.prizePoolCurrency) {
+      tournamentData.prizePoolCurrency = 'INR';
+    }
     
     const tournament = await Tournament.create(tournamentData);
     
@@ -330,7 +351,7 @@ exports.updateTournament = async (req, res, next) => {
     }
     
     const allowedUpdates = [
-      'title', 'description', 'entryFee', 'prizePool', 'prizeDistribution',
+      'title', 'description', 'entryFee', 'prizePool', 'prizePoolCurrency', 'prizeDistribution',
       'maxTeams', 'registrationStartAt', 'registrationEndAt', 'startAt',
       'rules', 'requirements', 'minLevelRequired', 'isFeatured', 'sponsor',
       'banner', 'thumbnail', 'streamUrl', 'pointSystem', 'status'

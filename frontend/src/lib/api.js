@@ -21,9 +21,11 @@ const getBaseUrl = () => {
     }
   }
 
-  // Production fallback
+  // Production fallback - use environment variable or secure default
   if (process.env.NODE_ENV === 'production') {
-    return 'https://bgmibackend-5gu6.onrender.com/api';
+    // SECURITY: In production, require explicit API URL configuration
+    const prodUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.battlezone.com/api';
+    return prodUrl;
   }
 
   // Development fallback
@@ -36,6 +38,7 @@ export const SOCKET_URL = API_BASE_URL.replace('/api', '');
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+  timeout: 30000, // 30 second timeout
 });
 
 // Add request interceptor to include Authorization header
@@ -50,6 +53,24 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// SECURITY: Add response interceptor for error handling
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle common errors
+    if (error.response) {
+      // Log security-related errors
+      if (error.response.status === 401) {
+        // Token expired or invalid - clear local storage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Auth API

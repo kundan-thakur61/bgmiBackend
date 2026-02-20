@@ -79,19 +79,25 @@ exports.getUsers = async (req, res, next) => {
     const { page = 1, limit = 20, search, role, isBanned, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
     const query = {};
 
+    // SECURITY: Escape special regex characters to prevent NoSQL injection
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { name: { $regex: escapedSearch, $options: 'i' } },
+        { phone: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
     if (role) query.role = role;
     if (isBanned !== undefined) query.isBanned = isBanned === 'true';
 
+    // SECURITY: Validate sortBy to prevent NoSQL injection
+    const allowedSortFields = ['createdAt', 'name', 'email', 'role', 'walletBalance', 'lastLoginAt'];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
     const users = await User.find(query)
       .select('-otp -password -deviceFingerprints')
-      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+      .sort({ [safeSortBy]: sortOrder === 'desc' ? -1 : 1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 

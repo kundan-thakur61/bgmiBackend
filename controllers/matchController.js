@@ -586,12 +586,12 @@ exports.createUserMatch = async (req, res, next) => {
 
     const user = await User.findById(req.userId);
 
-    // Calculate costs: Creation Fee (10% of prize pool, min ₹5) + Prize Pool
-    const creationFee = Math.max(Math.floor(prizePool * 0.10), 5);
+    // Calculate costs: Creation Fee is FREE + Prize Pool only
+    const creationFee = 0; // Free creation fee
     const totalCost = creationFee + prizePool;
 
     if (user.walletBalance < totalCost) {
-      throw new BadRequestError(`Insufficient balance. You need ₹${totalCost} (Creation Fee: ₹${creationFee} + Prize Pool: ₹${prizePool})`);
+      throw new BadRequestError(`Insufficient balance. You need ₹${totalCost} (Prize Pool: ₹${prizePool})`);
     }
 
     // Validate room credentials are provided
@@ -633,15 +633,17 @@ exports.createUserMatch = async (req, res, next) => {
     // Add creator as first player automatically
     match.addUser(req.userId, user.inGameName || user.name, user.inGameId || '');
 
-    // Deduct Creation Fee from creator's wallet
-    await Transaction.createTransaction({
-      user: req.userId,
-      type: 'debit',
-      category: 'match_creation_fee',
-      amount: creationFee,
-      description: `Challenge creation fee for: ${title}`,
-      reference: { type: 'match', id: match._id }
-    });
+    // Deduct Creation Fee from creator's wallet (only if not free)
+    if (creationFee > 0) {
+      await Transaction.createTransaction({
+        user: req.userId,
+        type: 'debit',
+        category: 'match_creation_fee',
+        amount: creationFee,
+        description: `Challenge creation fee for: ${title}`,
+        reference: { type: 'match', id: match._id }
+      });
+    }
 
     // Deduct Prize Pool from creator's wallet (held in escrow)
     await Transaction.createTransaction({
@@ -847,6 +849,27 @@ exports.createMatch = async (req, res, next) => {
       createdBy: req.userId
     };
 
+    // Validate prize pool is a positive number
+    if (matchData.prizePool !== undefined) {
+      if (typeof matchData.prizePool !== 'number' || isNaN(matchData.prizePool)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Prize pool must be a valid number'
+        });
+      }
+      if (matchData.prizePool < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Prize pool must be a positive value'
+        });
+      }
+    }
+
+    // Set default currency if not provided
+    if (!matchData.prizePoolCurrency) {
+      matchData.prizePoolCurrency = 'INR';
+    }
+
     // Set default prize distribution if not provided
     if (!matchData.prizeDistribution || matchData.prizeDistribution.length === 0) {
       matchData.prizeDistribution = [
@@ -898,7 +921,7 @@ exports.updateMatch = async (req, res, next) => {
 
     // Update allowed fields
     const allowedUpdates = [
-      'title', 'description', 'entryFee', 'prizePool', 'prizeDistribution',
+      'title', 'description', 'entryFee', 'prizePool', 'prizePoolCurrency', 'prizeDistribution',
       'perKillPrize', 'maxSlots', 'scheduledAt', 'map', 'rules',
       'minLevelRequired', 'isFeatured', 'sponsor', 'streamUrl'
     ];
@@ -972,7 +995,8 @@ exports.setRoomCredentials = async (req, res, next) => {
   try {
     const { roomId, roomPassword, revealNow } = req.body;
 
-    const match = await Match.findById(req.params.id);
+    const match = await Match.findById(req.params.id)
+      .populate('joinedUsers.user', '_id');
 
     if (!match) {
       throw new NotFoundError('Match not found');
@@ -988,13 +1012,27 @@ exports.setRoomCredentials = async (req, res, next) => {
       // Notify all participants
       await Notification.notifyRoomReleased(match);
 
-      // Emit socket event
+      // Emit socket event to match room
       const io = req.app.get('io');
       io.to(`match_${match._id}`).emit('room_revealed', {
         matchId: match._id,
         roomId,
         roomPassword
       });
+
+      // Also emit to each participant's personal room for redundancy
+      if (match.joinedUsers && match.joinedUsers.length > 0) {
+        for (const participant of match.joinedUsers) {
+          const userId = participant.user?._id || participant.user;
+          if (userId) {
+            io.to(`user_${userId}`).emit('room_revealed', {
+              matchId: match._id,
+              roomId,
+              roomPassword
+            });
+          }
+        }
+      }
     }
 
     await match.save();

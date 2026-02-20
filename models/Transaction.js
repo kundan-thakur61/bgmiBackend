@@ -34,7 +34,10 @@ const transactionSchema = new mongoose.Schema({
       'bonus',             // Promotional bonus
       'admin_credit',      // Admin credited
       'admin_debit',       // Admin debited
-      'penalty'            // Penalty for rule violation
+      'penalty',           // Penalty for rule violation
+      'popularity_purchase', // Buying popularity points
+      'popularity_sale',   // Selling popularity points
+      'popularity_refund'  // Refund for cancelled popularity transaction
     ],
     index: true
   },
@@ -60,7 +63,7 @@ const transactionSchema = new mongoose.Schema({
   reference: {
     type: {
       type: String,
-      enum: ['match', 'tournament', 'withdrawal', 'deposit', 'referral', 'admin']
+      enum: ['match', 'tournament', 'withdrawal', 'deposit', 'referral', 'admin', 'popularity_transaction']
     },
     id: mongoose.Schema.Types.ObjectId
   },

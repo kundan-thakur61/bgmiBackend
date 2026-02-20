@@ -37,6 +37,11 @@ const tournamentSchema = new mongoose.Schema({
     required: true,
     min: [0, 'Prize pool cannot be negative']
   },
+  prizePoolCurrency: {
+    type: String,
+    enum: ['INR', 'USD', 'EUR', 'GBP'],
+    default: 'INR'
+  },
   prizeDistribution: [{
     position: Number,
     prize: Number,

@@ -2,11 +2,22 @@ const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 const { auth } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+
+// Chat message rate limiter - prevent spam
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 messages per minute per user
+  message: { success: false, message: 'Too many messages. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.userId?.toString() || req.ip
+});
 
 // ==================== ROOM MESSAGES ====================
 
 // Send a message (works for match, tournament, or DM)
-router.post('/send', auth, chatController.createMessage);
+router.post('/send', auth, chatLimiter, chatController.createMessage);
 
 // Get messages for a match
 router.get('/match/:matchId', auth, chatController.getMatchMessages);
@@ -15,6 +26,9 @@ router.get('/match/:matchId', auth, chatController.getMatchMessages);
 router.get('/tournament/:tournamentId', auth, chatController.getTournamentMessages);
 
 // ==================== DIRECT MESSAGES ====================
+
+// Get available admins to contact
+router.get('/admins', auth, chatController.getAdmins);
 
 // Get user's DM conversations
 router.get('/conversations', auth, chatController.getConversations);

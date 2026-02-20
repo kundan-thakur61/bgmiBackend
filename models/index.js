@@ -25,6 +25,10 @@ const SeasonalPass = require('./SeasonalPass');
 const Announcement = require('./Announcement');
 const Room = require('./Room');
 const LeaderboardArchive = require('./LeaderboardArchive');
+const PrizeDistributionRule = require('./PrizeDistributionRule');
+const SavedPaymentMethod = require('./SavedPaymentMethod');
+const PopularityListing = require('./PopularityListing');
+const PopularityTransaction = require('./PopularityTransaction');
 
 module.exports = {
   User,
@@ -53,5 +57,9 @@ module.exports = {
   SeasonalPass,
   Announcement,
   Room,
-  LeaderboardArchive
+  LeaderboardArchive,
+  PrizeDistributionRule,
+  SavedPaymentMethod,
+  PopularityListing,
+  PopularityTransaction
 };

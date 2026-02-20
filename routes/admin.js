@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const prizeDistributionController = require('../controllers/prizeDistributionController');
 const { auth, adminOnly, authorize, financeAccess, supportAccess, matchManagerAccess } = require('../middleware/auth');
 
 // =====================================================
@@ -92,6 +93,51 @@ router.get('/export', auth, adminOnly, adminController.exportData);
 // BROADCAST NOTIFICATIONS
 // =====================================================
 router.post('/broadcast', auth, adminOnly, adminController.broadcastNotification);
+
+// =====================================================
+// PRIZE DISTRIBUTION RULES & REGULATIONS
+// =====================================================
+// Get all rules
+router.get('/prize-rules', auth, matchManagerAccess, prizeDistributionController.getRules);
+
+// Get rule statistics
+router.get('/prize-rules/stats', auth, matchManagerAccess, prizeDistributionController.getRuleStats);
+
+// Get single rule
+router.get('/prize-rules/:id', auth, matchManagerAccess, prizeDistributionController.getRule);
+
+// Create new rule
+router.post('/prize-rules', auth, matchManagerAccess, prizeDistributionController.createRule);
+
+// Update rule
+router.put('/prize-rules/:id', auth, matchManagerAccess, prizeDistributionController.updateRule);
+
+// Delete rule
+router.delete('/prize-rules/:id', auth, authorize('super_admin', 'admin'), prizeDistributionController.deleteRule);
+
+// Toggle rule status
+router.patch('/prize-rules/:id/toggle', auth, matchManagerAccess, prizeDistributionController.toggleRuleStatus);
+
+// Set default rule
+router.patch('/prize-rules/:id/default', auth, authorize('super_admin', 'admin'), prizeDistributionController.setDefaultRule);
+
+// Get rule version history
+router.get('/prize-rules/:id/history', auth, matchManagerAccess, prizeDistributionController.getRuleHistory);
+
+// Restore rule to previous version
+router.post('/prize-rules/:id/restore/:version', auth, authorize('super_admin', 'admin'), prizeDistributionController.restoreRuleVersion);
+
+// Duplicate a rule
+router.post('/prize-rules/:id/duplicate', auth, matchManagerAccess, prizeDistributionController.duplicateRule);
+
+// Preview distribution for a match
+router.get('/prize-rules/:ruleId/preview/:matchId', auth, matchManagerAccess, prizeDistributionController.previewDistribution);
+
+// Get applicable rule for a match
+router.get('/prize-rules/match/:matchId/applicable', auth, matchManagerAccess, prizeDistributionController.getApplicableRule);
+
+// Bulk update rules
+router.patch('/prize-rules/bulk', auth, authorize('super_admin', 'admin'), prizeDistributionController.bulkUpdateRules);
 
 module.exports = router;
 

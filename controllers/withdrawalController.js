@@ -1,4 +1,4 @@
-const { Withdrawal, User, Transaction, Notification, AdminLog } = require('../models');
+const { Withdrawal, User, Transaction, Notification, AdminLog, SavedPaymentMethod } = require('../models');
 const { BadRequestError, NotFoundError } = require('../middleware/errorHandler');
 
 // Get user's withdrawals
@@ -34,7 +34,7 @@ exports.getWithdrawals = async (req, res, next) => {
 // Create withdrawal request
 exports.createWithdrawal = async (req, res, next) => {
   try {
-    const { amount, method, upiId, bankDetails } = req.body;
+    const { amount, method, upiId, bankDetails, savedPaymentMethodId, savePaymentMethod } = req.body;
     
     // Check eligibility
     const eligibility = await Withdrawal.canUserWithdraw(req.userId);
@@ -48,14 +48,66 @@ exports.createWithdrawal = async (req, res, next) => {
       throw new BadRequestError('Insufficient wallet balance');
     }
     
-    // Validate method-specific details
-    if (method === 'upi' && !upiId) {
-      throw new BadRequestError('UPI ID is required for UPI withdrawal');
-    }
+    let withdrawalMethod = method;
+    let withdrawalUpiId = upiId;
+    let withdrawalBankDetails = bankDetails;
+    let savedMethod = null;
     
-    if (method === 'bank') {
-      if (!bankDetails?.accountNumber || !bankDetails?.ifscCode || !bankDetails?.accountHolderName) {
-        throw new BadRequestError('Complete bank details are required');
+    // If using a saved payment method, fetch and validate it
+    if (savedPaymentMethodId) {
+      savedMethod = await SavedPaymentMethod.findOne({
+        _id: savedPaymentMethodId,
+        user: req.userId
+      });
+      
+      if (!savedMethod) {
+        throw new NotFoundError('Saved payment method not found');
+      }
+      
+      withdrawalMethod = savedMethod.method;
+      withdrawalUpiId = savedMethod.upiId;
+      withdrawalBankDetails = savedMethod.bankDetails;
+      
+      // Mark the saved method as used
+      await savedMethod.markAsUsed();
+    } else {
+      // Validate method-specific details for new payment method
+      if (method === 'upi' && !upiId) {
+        throw new BadRequestError('UPI ID is required for UPI withdrawal');
+      }
+      
+      if (method === 'bank') {
+        if (!bankDetails?.accountNumber || !bankDetails?.ifscCode || !bankDetails?.accountHolderName) {
+          throw new BadRequestError('Complete bank details are required');
+        }
+      }
+      
+      // Optionally save the payment method for future use
+      if (savePaymentMethod) {
+        try {
+          // Check if this payment method already exists
+          const existingMethod = method === 'upi' 
+            ? await SavedPaymentMethod.findOne({ user: req.userId, method: 'upi', upiId: upiId.toLowerCase() })
+            : await SavedPaymentMethod.findOne({ user: req.userId, method: 'bank', 'bankDetails.accountNumber': bankDetails.accountNumber });
+          
+          if (!existingMethod) {
+            // Create new saved payment method
+            await SavedPaymentMethod.create({
+              user: req.userId,
+              method,
+              upiId: method === 'upi' ? upiId.toLowerCase() : undefined,
+              bankDetails: method === 'bank' ? {
+                accountHolderName: bankDetails.accountHolderName,
+                accountNumber: bankDetails.accountNumber,
+                ifscCode: bankDetails.ifscCode.toUpperCase(),
+                bankName: bankDetails.bankName
+              } : undefined
+            });
+          }
+        } catch (saveError) {
+          // Log but don't fail the withdrawal if saving fails
+          console.error('Failed to save payment method:', saveError);
+        }
       }
     }
     
@@ -63,9 +115,9 @@ exports.createWithdrawal = async (req, res, next) => {
     const withdrawal = await Withdrawal.create({
       user: req.userId,
       amount,
-      method,
-      upiId: method === 'upi' ? upiId : undefined,
-      bankDetails: method === 'bank' ? bankDetails : undefined,
+      method: withdrawalMethod,
+      upiId: withdrawalMethod === 'upi' ? withdrawalUpiId : undefined,
+      bankDetails: withdrawalMethod === 'bank' ? withdrawalBankDetails : undefined,
       walletBalanceAtRequest: user.walletBalance,
       ip: req.ip,
       userAgent: req.headers['user-agent']

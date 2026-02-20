@@ -42,6 +42,11 @@ const matchSchema = new mongoose.Schema({
     required: [true, 'Prize pool is required'],
     min: [0, 'Prize pool cannot be negative']
   },
+  prizePoolCurrency: {
+    type: String,
+    enum: ['INR', 'USD', 'EUR', 'GBP'],
+    default: 'INR'
+  },
   prizeDistribution: [{
     position: Number,
     prize: Number,
