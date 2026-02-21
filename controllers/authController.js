@@ -221,7 +221,7 @@ exports.googleAuth = (req, res) => {
     callbackUrl = `https://${host}/api/auth/google/callback`;
   } else if (process.env.NODE_ENV === 'production') {
     if (!callbackUrl || callbackUrl.includes('localhost')) {
-      callbackUrl = 'https://bgmibackend-5gu6.onrender.com/api/auth/google/callback';
+      callbackUrl = 'https://api.battlexzone.com/api/auth/google/callback';
     }
   }
 
@@ -249,7 +249,7 @@ exports.googleCallback = async (req, res, next) => {
       callbackUrl = `https://${host}/api/auth/google/callback`;
     } else if (process.env.NODE_ENV === 'production') {
       if (!callbackUrl || callbackUrl.includes('localhost')) {
-        callbackUrl = 'https://bgmibackend-5gu6.onrender.com/api/auth/google/callback';
+        callbackUrl = 'https://api.battlexzone.com/api/auth/google/callback';
       }
     }
 
@@ -319,7 +319,7 @@ exports.googleCallback = async (req, res, next) => {
 
     // Only fallback to production if FRONTEND_URL is not set
     if (!frontendUrl) {
-      frontendUrl = 'https://bgmifrontendcod.vercel.app';
+      frontendUrl = 'https://www.battlexzone.com';
       console.warn('⚠️ FRONTEND_URL not set, using production URL as fallback');
     }
 

@@ -7,7 +7,7 @@ cloudinary.config({
 });
 
 // Upload image helper
-const uploadImage = async (file, folder = 'battlezone') => {
+const uploadImage = async (file, folder = 'battlexzone') => {
   try {
     const result = await cloudinary.uploader.upload(file, {
       folder,
@@ -43,7 +43,7 @@ const deleteImage = async (publicId) => {
 const uploadScreenshot = async (file, matchId, userId) => {
   try {
     const result = await cloudinary.uploader.upload(file, {
-      folder: `battlezone/screenshots/${matchId}`,
+      folder: `battlexzone/screenshots/${matchId}`,
       resource_type: 'image',
       context: {
         userId,

@@ -2,21 +2,21 @@
 const generateOrganizationSchema = () => ({
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "BattleZone BGMI",
+  "name": "BattleXZone",
   "url": process.env.FRONTEND_URL,
   "logo": `${process.env.FRONTEND_URL}/logo.png`,
   "description": "Premier BGMI tournament and match booking platform",
   "sameAs": [
-    "https://facebook.com/battlezone",
-    "https://twitter.com/battlezone",
-    "https://instagram.com/battlezone"
+    "https://facebook.com/battlexzone",
+    "https://twitter.com/battlexzone",
+    "https://instagram.com/battlexzone"
   ]
 });
 
 const generateWebsiteSchema = () => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "BattleZone",
+  "name": "BattleXZone",
   "url": process.env.FRONTEND_URL,
   "potentialAction": {
     "@type": "SearchAction",
@@ -44,7 +44,7 @@ const generateTournamentSchema = (tournament) => ({
   },
   "organizer": {
     "@type": "Organization",
-    "name": "BattleZone"
+    "name": "BattleXZone"
   }
 });
 
@@ -95,7 +95,7 @@ const generateArticleSchema = (article) => ({
   "dateModified": article.modifiedDate,
   "author": {
     "@type": "Organization",
-    "name": "BattleZone"
+    "name": "BattleXZone"
   }
 });
 

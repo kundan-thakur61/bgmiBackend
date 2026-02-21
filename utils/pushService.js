@@ -15,7 +15,7 @@ const webpush = require('web-push');
 // Initialize VAPID keys if they exist
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@battlezone.com';
+const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@battlexzone.com';
 
 let isConfigured = false;
 
@@ -64,7 +64,7 @@ const sendPush = async (subscription, payload) => {
                 { action: 'open', title: 'View' },
                 { action: 'dismiss', title: 'Dismiss' }
             ],
-            tag: payload.tag || 'battlezone-notification',
+            tag: payload.tag || 'battlexzone-notification',
             renotify: payload.renotify || false,
             requireInteraction: payload.requireInteraction || false,
             silent: payload.silent || false,

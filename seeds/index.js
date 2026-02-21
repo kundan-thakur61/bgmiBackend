@@ -5,7 +5,7 @@ const { User, Match, Tournament, Announcement } = require('../models');
 
 const seedDatabase = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlezone');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlexzone');
     console.log('Connected to MongoDB');
     
     // Clear existing data (be careful in production!)
@@ -21,7 +21,7 @@ const seedDatabase = async () => {
     const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@123456', 12);
     const superAdmin = await User.create({
       name: 'Super Admin',
-      email: process.env.ADMIN_EMAIL || 'admin@battlezone.in',
+      email: process.env.ADMIN_EMAIL || 'admin@battlexzone.com',
       phone: '9999999999',
       password: adminPassword,
       role: 'super_admin',
@@ -185,7 +185,7 @@ const seedDatabase = async () => {
     
     console.log('\n✅ Database seeded successfully!');
     console.log('\n📧 Admin Login:');
-    console.log(`   Email: ${process.env.ADMIN_EMAIL || 'admin@battlezone.in'}`);
+    console.log(`   Email: ${process.env.ADMIN_EMAIL || 'admin@battlexzone.com'}`);
     console.log(`   Password: ${process.env.ADMIN_PASSWORD || 'Admin@123456'}`);
     
     process.exit(0);

@@ -26,7 +26,7 @@ class Logger {
     this.level = LOG_LEVELS[process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')];
     this.isProduction = process.env.NODE_ENV === 'production';
     this.isTest = process.env.NODE_ENV === 'test';
-    this.serviceName = process.env.SERVICE_NAME || 'battlezone-api';
+    this.serviceName = process.env.SERVICE_NAME || 'battlexzone-api';
   }
 
   _shouldLog(level) {

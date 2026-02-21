@@ -1,7 +1,7 @@
 {
-  "name": "bgmi-backend",
+  "name": "battlexzone-backend",
   "version": "2.0.0",
-  "description": "BattleZone — Production BGMI Tournament & Match Platform API",
+  "description": "BattleXZone — Production BGMI Tournament & Match Platform API",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -15,7 +15,7 @@
     "lint:fix": "npx eslint . --ext .js --ignore-path .gitignore --fix",
     "health": "curl -s http://localhost:${PORT:-5000}/health | node -e \"process.stdin.on('data',d=>{const h=JSON.parse(d);console.log(h.status==='healthy'?'✅ Healthy':'❌ '+h.status);process.exit(h.status==='healthy'?0:1)})\"",
     "db:migrate": "node scripts/migrate.js",
-    "docker:build": "docker build -t battlezone-api -f Dockerfile ..",
+    "docker:build": "docker build -t battlexzone-api -f Dockerfile ..",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
     "docker:logs": "docker-compose logs -f backend"

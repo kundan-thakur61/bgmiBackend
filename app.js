@@ -341,7 +341,7 @@ const MONGO_OPTIONS = {
 async function startServer() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlezone', MONGO_OPTIONS);
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/battlexzone', MONGO_OPTIONS);
     logger.info('✅ MongoDB connected', {
       host: mongoose.connection.host,
       name: mongoose.connection.name
