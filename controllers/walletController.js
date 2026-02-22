@@ -152,38 +152,60 @@ exports.verifyPayment = async (req, res, next) => {
       throw new BadRequestError('Payment not captured');
     }
     
-    // Update user balance
-    const user = await User.findById(req.userId);
-    const previousBalance = user.walletBalance;
-    user.walletBalance += transaction.amount;
-    await user.save();
+    // Atomically lock the transaction to prevent double processing (webhook + client verify)
+    const lockedTx = await Transaction.findOneAndUpdate(
+      { _id: transaction._id, status: 'pending' },
+      { $set: { status: 'processing' } },
+      { new: true }
+    );
+    if (!lockedTx) {
+      // Already processed by webhook or another request
+      const existingTx = await Transaction.findById(transaction._id);
+      if (existingTx && existingTx.status === 'completed') {
+        const user = await User.findById(req.userId).select('walletBalance');
+        return res.json({
+          success: true,
+          message: 'Payment already processed',
+          balance: user.walletBalance,
+          transaction: { id: existingTx._id, amount: existingTx.amount, status: existingTx.status }
+        });
+      }
+      throw new BadRequestError('Transaction could not be processed');
+    }
+
+    // Atomically update user balance using $inc to prevent race conditions
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $inc: { walletBalance: lockedTx.amount } },
+      { new: true }
+    );
     
     // Update transaction
-    transaction.status = 'completed';
-    transaction.balanceAfter = user.walletBalance;
-    transaction.paymentDetails.paymentId = paymentId;
-    transaction.paymentDetails.signature = signature;
-    transaction.paymentDetails.method = payment.method;
-    transaction.paymentDetails.vpa = payment.vpa;
-    await transaction.save();
+    lockedTx.status = 'completed';
+    lockedTx.balanceAfter = user.walletBalance;
+    lockedTx.paymentDetails.paymentId = paymentId;
+    lockedTx.paymentDetails.signature = signature;
+    lockedTx.paymentDetails.method = payment.method;
+    lockedTx.paymentDetails.vpa = payment.vpa;
+    await lockedTx.save();
     
-    // Send notification
-    await Notification.createAndPush({
+    // Send notification (fire-and-forget to avoid failing the payment response)
+    Notification.createAndPush({
       user: req.userId,
       type: 'deposit_success',
       title: 'Deposit Successful',
-      message: `₹${transaction.amount} has been added to your wallet.`,
-      reference: { type: 'transaction', id: transaction._id }
-    });
+      message: `₹${lockedTx.amount} has been added to your wallet.`,
+      reference: { type: 'transaction', id: lockedTx._id }
+    }).catch(err => console.error('Notification error:', err));
     
     res.json({
       success: true,
       message: 'Payment successful',
       balance: user.walletBalance,
       transaction: {
-        id: transaction._id,
-        amount: transaction.amount,
-        status: transaction.status
+        id: lockedTx._id,
+        amount: lockedTx.amount,
+        status: lockedTx.status
       }
     });
   } catch (error) {
@@ -219,23 +241,37 @@ exports.razorpayWebhook = async (req, res, next) => {
       });
       
       if (transaction) {
-        const user = await User.findById(transaction.user);
-        user.walletBalance += transaction.amount;
-        await user.save();
+        // Atomically lock the transaction to prevent double processing
+        const lockedTx = await Transaction.findOneAndUpdate(
+          { _id: transaction._id, status: 'pending' },
+          { $set: { status: 'processing' } },
+          { new: true }
+        );
+        if (!lockedTx) {
+          // Already processed by client verify or another webhook
+          return res.json({ success: true, message: 'Already processed' });
+        }
+
+        // Atomically update user balance using $inc
+        const user = await User.findByIdAndUpdate(
+          lockedTx.user,
+          { $inc: { walletBalance: lockedTx.amount } },
+          { new: true }
+        );
         
-        transaction.status = 'completed';
-        transaction.balanceAfter = user.walletBalance;
-        transaction.paymentDetails.paymentId = paymentId;
-        await transaction.save();
+        lockedTx.status = 'completed';
+        lockedTx.balanceAfter = user.walletBalance;
+        lockedTx.paymentDetails.paymentId = paymentId;
+        await lockedTx.save();
         
-        // Send notification
-        await Notification.createAndPush({
-          user: transaction.user,
+        // Send notification (fire-and-forget)
+        Notification.createAndPush({
+          user: lockedTx.user,
           type: 'deposit_success',
           title: 'Deposit Successful',
-          message: `₹${transaction.amount} has been added to your wallet.`,
-          reference: { type: 'transaction', id: transaction._id }
-        });
+          message: `₹${lockedTx.amount} has been added to your wallet.`,
+          reference: { type: 'transaction', id: lockedTx._id }
+        }).catch(err => console.error('Webhook notification error:', err));
       }
     }
     

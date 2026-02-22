@@ -15,12 +15,19 @@ exports.getTournaments = async (req, res, next) => {
     const query = {};
     if (gameType) query.gameType = gameType;
     if (status) query.status = { $in: status.split(',') };
+
+    // Validate sortBy to prevent NoSQL injection via sort field
+    const allowedSortFields = ['startAt', 'createdAt', 'entryFee', 'prizePool', 'title'];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'startAt';
+
+    // Clamp limit to prevent excessive data dumps
+    const clampedLimit = Math.min(Math.max(parseInt(limit) || 12, 1), 100);
     
     const tournaments = await Tournament.find(query)
       .select('-participants')
-      .sort({ [sortBy]: 1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .sort({ [safeSortBy]: 1 })
+      .skip((page - 1) * clampedLimit)
+      .limit(clampedLimit)
       .populate('createdBy', 'name');
     
     const total = await Tournament.countDocuments(query);

@@ -1,6 +1,7 @@
 const Room = require('../models/Room');
 const User = require('../models/User');
 const Match = require('../models/Match');
+const bcrypt = require('bcryptjs');
 
 // Create a new room
 exports.createRoom = async (req, res) => {
@@ -49,9 +50,10 @@ exports.createRoom = async (req, res) => {
             roomData.maxSlots = maxSlots;
         }
 
-        // Set password if provided
+        // Set password if provided (hash it)
         if (password) {
-            roomData.password = password;
+            const salt = await bcrypt.genSalt(10);
+            roomData.password = await bcrypt.hash(password, salt);
             roomData.isPasswordProtected = true;
         }
 
@@ -136,14 +138,17 @@ exports.getRooms = async (req, res) => {
         if (gameType) filter.gameType = gameType;
         if (map) filter.map = map;
         if (search) {
+            // Escape regex special characters to prevent ReDoS attacks
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             filter.$or = [
-                { title: { $regex: search, $options: 'i' } },
+                { title: { $regex: escapedSearch, $options: 'i' } },
                 { roomCode: search }
             ];
         }
 
-        // Pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        // Pagination (clamp limit to prevent excessive data dumps)
+        const clampedLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+        const skip = (parseInt(page) - 1) * clampedLimit;
 
         // Get rooms
         const rooms = await Room.find(filter)
@@ -151,7 +156,7 @@ exports.getRooms = async (req, res) => {
             .populate('participants.user', 'username avatar inGameName')
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(parseInt(limit));
+            .limit(clampedLimit);
 
         const total = await Room.countDocuments(filter);
 
@@ -265,7 +270,8 @@ exports.joinRoom = async (req, res) => {
         // Check password if protected
         if (room.isPasswordProtected) {
             const roomWithPassword = await Room.findById(id).select('+password');
-            if (roomWithPassword.password !== password) {
+            const isPasswordValid = await bcrypt.compare(password || '', roomWithPassword.password);
+            if (!isPasswordValid) {
                 return res.status(401).json({
                     success: false,
                     message: 'Incorrect password'

@@ -23,21 +23,28 @@ exports.getMatches = async (req, res, next) => {
     if (gameType) query.gameType = gameType;
     if (matchType) query.matchType = matchType;
     if (status) query.status = { $in: status.split(',') };
-    if (createdBy) query.createdBy = createdBy; // Add createdBy filter
+    if (createdBy && /^[a-f0-9]{24}$/.test(createdBy)) query.createdBy = createdBy; // Validate ObjectId format
     if (isChallenge !== undefined && isChallenge !== '') {
       query.isChallenge = isChallenge === 'true';
     }
 
+    // Validate sortBy to prevent NoSQL injection via sort field
+    const allowedSortFields = ['scheduledAt', 'createdAt', 'entryFee', 'prizePool', 'title', 'filledSlots'];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'scheduledAt';
+
     const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    sort[safeSortBy] = sortOrder === 'desc' ? -1 : 1;
     sort['_id'] = 1; // Secondary sort to ensure stable pagination
+
+    // Clamp limit to prevent excessive data dumps
+    const clampedLimit = Math.min(Math.max(parseInt(limit) || 12, 1), 100);
 
     // Use .lean() for faster read performance (returns plain objects)
     const matches = await Match.find(query)
       .select('-roomId -roomPassword -joinedUsers.screenshot')
       .sort(sort)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((page - 1) * clampedLimit)
+      .limit(clampedLimit)
       .populate('createdBy', 'name role')
       .populate('host', 'name isVerifiedHost')
       .lean();
@@ -49,9 +56,9 @@ exports.getMatches = async (req, res, next) => {
       matches,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: clampedLimit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / clampedLimit)
       }
     });
   } catch (error) {
@@ -202,12 +209,25 @@ exports.joinMatch = async (req, res, next) => {
       userAgent: req.headers['user-agent']
     });
 
-    // Update user's wallet
-    user.walletBalance -= match.entryFee;
-    await user.save();
+    // Atomically deduct wallet balance using $inc to prevent race conditions
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.userId, walletBalance: { $gte: match.entryFee } },
+      { $inc: { walletBalance: -match.entryFee } },
+      { new: true }
+    );
+    if (!updatedUser) {
+      throw new BadRequestError('Insufficient wallet balance (balance changed during request)');
+    }
 
-    // Add user to match
-    const assignedSlot = match.addUser(req.userId, inGameName, inGameId, slotNumber ? parseInt(slotNumber) : null);
+    // Add user to match (wrapped in try/catch for rollback if slot taken)
+    let assignedSlot;
+    try {
+      assignedSlot = match.addUser(req.userId, inGameName, inGameId, slotNumber ? parseInt(slotNumber) : null);
+    } catch (addErr) {
+      // Rollback: refund the entry fee atomically
+      await User.findByIdAndUpdate(req.userId, { $inc: { walletBalance: match.entryFee } });
+      throw addErr;
+    }
 
     // Check if match is now full - reveal room credentials
     const isMatchFull = match.filledSlots >= match.maxSlots;
@@ -621,7 +641,7 @@ exports.createUserMatch = async (req, res, next) => {
       createdBy: req.userId,
       host: req.userId,
       rules,
-      isFeatured,
+      isFeatured: false, // Only admins can feature matches
       tags,
       streamUrl,
       spectatorSlots,
@@ -655,9 +675,15 @@ exports.createUserMatch = async (req, res, next) => {
       reference: { type: 'match', id: match._id }
     });
 
-    // Update user's wallet
-    user.walletBalance -= totalCost;
-    await user.save();
+    // Atomically deduct wallet balance using $inc
+    const updatedWallet = await User.findOneAndUpdate(
+      { _id: req.userId, walletBalance: { $gte: totalCost } },
+      { $inc: { walletBalance: -totalCost } },
+      { new: true }
+    );
+    if (!updatedWallet) {
+      throw new BadRequestError('Insufficient wallet balance (balance changed during request)');
+    }
 
     await match.save();
 

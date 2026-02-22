@@ -212,6 +212,11 @@ exports.adjustWallet = async (req, res, next) => {
     const { amount, type, reason } = req.body;
     if (!amount || !type || !reason) throw new BadRequestError('Amount, type, and reason are required');
 
+    // Prevent admin from adjusting their own wallet
+    if (req.params.id === req.userId.toString()) {
+      throw new ForbiddenError('Cannot adjust your own wallet');
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) throw new NotFoundError('User not found');
 
@@ -292,7 +297,14 @@ exports.createAnnouncement = async (req, res, next) => {
 // Update announcement
 exports.updateAnnouncement = async (req, res, next) => {
   try {
-    const announcement = await Announcement.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Whitelist allowed fields to prevent overwriting protected fields
+    const allowedFields = ['title', 'message', 'type', 'isActive', 'expiresAt', 'priority'];
+    const updates = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
+    const announcement = await Announcement.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true });
     if (!announcement) throw new NotFoundError('Announcement not found');
     res.json({ success: true, message: 'Announcement updated', announcement });
   } catch (error) {

@@ -47,6 +47,11 @@ exports.createWithdrawal = async (req, res, next) => {
     if (user.walletBalance < amount) {
       throw new BadRequestError('Insufficient wallet balance');
     }
+
+    // Check KYC verification
+    if (!user.isKycVerified) {
+      throw new BadRequestError('KYC verification is required before making withdrawals');
+    }
     
     let withdrawalMethod = method;
     let withdrawalUpiId = upiId;
@@ -123,9 +128,15 @@ exports.createWithdrawal = async (req, res, next) => {
       userAgent: req.headers['user-agent']
     });
     
-    // Temporarily hold the amount (deduct from balance)
-    user.walletBalance -= amount;
-    await user.save();
+    // Atomically deduct balance — prevents race condition / overdraft
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.userId, walletBalance: { $gte: amount } },
+      { $inc: { walletBalance: -amount } },
+      { new: true }
+    );
+    if (!updatedUser) {
+      throw new BadRequestError('Insufficient wallet balance (concurrent request detected)');
+    }
     
     // Create pending transaction
     await Transaction.create({
@@ -134,7 +145,7 @@ exports.createWithdrawal = async (req, res, next) => {
       category: 'withdrawal',
       amount,
       balanceBefore: withdrawal.walletBalanceAtRequest,
-      balanceAfter: user.walletBalance,
+      balanceAfter: updatedUser.walletBalance,
       description: `Withdrawal request #${withdrawal._id}`,
       status: 'pending',
       reference: { type: 'withdrawal', id: withdrawal._id }
@@ -173,10 +184,12 @@ exports.cancelWithdrawal = async (req, res, next) => {
       throw new BadRequestError('Only pending withdrawals can be cancelled');
     }
     
-    // Refund to wallet
-    const user = await User.findById(req.userId);
-    user.walletBalance += withdrawal.amount;
-    await user.save();
+    // Atomically refund to wallet using $inc
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $inc: { walletBalance: withdrawal.amount } },
+      { new: true }
+    );
     
     // Update withdrawal status
     withdrawal.status = 'cancelled';
@@ -388,10 +401,12 @@ exports.rejectWithdrawal = async (req, res, next) => {
       throw new BadRequestError('Cannot reject this withdrawal');
     }
     
-    // Refund to user
-    const user = await User.findById(withdrawal.user);
-    user.walletBalance += withdrawal.amount;
-    await user.save();
+    // Atomically refund to user using $inc
+    const user = await User.findByIdAndUpdate(
+      withdrawal.user,
+      { $inc: { walletBalance: withdrawal.amount } },
+      { new: true }
+    );
     
     // Update withdrawal
     withdrawal.status = 'rejected';
