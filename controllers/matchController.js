@@ -209,16 +209,6 @@ exports.joinMatch = async (req, res, next) => {
       userAgent: req.headers['user-agent']
     });
 
-    // Atomically deduct wallet balance using $inc to prevent race conditions
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: req.userId, walletBalance: { $gte: match.entryFee } },
-      { $inc: { walletBalance: -match.entryFee } },
-      { new: true }
-    );
-    if (!updatedUser) {
-      throw new BadRequestError('Insufficient wallet balance (balance changed during request)');
-    }
-
     // Add user to match (wrapped in try/catch for rollback if slot taken)
     let assignedSlot;
     try {
@@ -674,16 +664,6 @@ exports.createUserMatch = async (req, res, next) => {
       description: `Prize pool escrow for challenge: ${title}`,
       reference: { type: 'match', id: match._id }
     });
-
-    // Atomically deduct wallet balance using $inc
-    const updatedWallet = await User.findOneAndUpdate(
-      { _id: req.userId, walletBalance: { $gte: totalCost } },
-      { $inc: { walletBalance: -totalCost } },
-      { new: true }
-    );
-    if (!updatedWallet) {
-      throw new BadRequestError('Insufficient wallet balance (balance changed during request)');
-    }
 
     await match.save();
 

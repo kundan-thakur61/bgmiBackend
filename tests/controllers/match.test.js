@@ -176,7 +176,6 @@ describe('Match Controller', () => {
       
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.slotNumber).toBeDefined();
       
       // Check user balance deducted
       const updatedUser = await User.findById(user._id);

@@ -21,7 +21,7 @@ router.post('/:id/user-cancel', auth, matchController.cancelUserMatch);
 router.put('/:id/user-update', auth, matchController.updateUserMatch);
 
 // Protected routes (requires auth)
-router.post('/:id/join', auth, matchController.joinMatch);
+router.post('/:id/join', auth, validationChains.joinMatch, matchController.joinMatch);
 router.post('/:id/leave', auth, matchController.leaveMatch);
 router.get('/:id/room', auth, matchController.getRoomCredentials);
 router.post('/:id/screenshot', auth, screenshotUpload.single('screenshot'), matchController.uploadScreenshot);
